@@ -14,9 +14,11 @@ Will render a column of text in the font you drop on the window.
 Like the included `opentype.js` this software is licensed under the MIT license.
 
 ## Requirements
-These pages needs to be served with the `http_server` webserver component from Node, so this must be installed before using these pages. The `serve.sh` script will detect and alert you if this component is not installed.
+These pages needs to be served with the `http_server` webserver component from [Node](https://nodejs.org/en/download), so this must be installed before using these pages. The `serve.sh` script will detect and alert you if this component is not installed.
 
 The `serve.sh` and `serve.bat` scripts are configured to find and use the Chrome browser.
+
+An internet connection is not necessary.
 
 ##  How to use the BX90000 Font Presenter Super Suite
 Execute the `serve.sh` (Linux or MacOS) or `serve.bat` (Windows). These scripts will check for the presence of the `http_server`, warn you if it isn’t installed, otherwise proceed with detecting your operating system, finding the Chrome executable, and open the `index.html` in an Incognito window.
