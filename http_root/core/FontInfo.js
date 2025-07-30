@@ -16,14 +16,21 @@ export class FontInfoRenderer {
     container.innerHTML = `
         <p><strong>Names</strong><br>
         Font family &rarr; ${info.fontFamily}<br>
-        Full name &rarr; ${info.fullName}</p>
+        Font style &rarr; ${info.fontStyle}<br>
 
         <p><strong>Font file</strong><br>
         Filename &rarr; ${info.filename}<br>
         File format &rarr; ${info.format}<br>
+        Variable font &rarr; ${info.axes.length > 0 ? 'Yes' : 'No'}<br>
+        Monospaced &rarr; ${info.isFixedPitch}<br>
         Units per Em &rarr; ${info.unitsPerEm}<br>
-        Glyph count &rarr; ${info.glyphCount}<br>
-        Monospaced &rarr; ${info.isFixedPitch}</p>
+        Glyph count &rarr; ${info.glyphCount}</p>
+
+        ${info.axes.length ? `
+        <p><strong>Variable font axes</strong><br>
+        ${info.axes.map(axis =>
+            `${axis.name} (${axis.tag}) &rarr; ${axis.min} to ${axis.max}, default &rarr; ${axis.default}`
+            ).join('<br>')}</p>` : ''}
 
         <p><strong>Version and dates</strong><br>
         Version &rarr; ${info.version}<br>
@@ -32,17 +39,17 @@ export class FontInfoRenderer {
 
         <p><strong>Foundry</strong><br>
         Manufacturer &rarr; ${info.manufacturer}<br>
+        ${info.manufacturerURL !== 'Unknown' ? `Manufacturer URL &rarr; ${info.manufacturerURL}<br>` : ''}
         Designer &rarr; ${info.designer}<br>
+        ${info.designerURL !== 'Unknown' ? `Designer URL &rarr; ${info.designerURL}<br>` : ''}
         Vendor ID &rarr; ${info.vendorID}</p>
 
         <p><strong>Copyright</strong><br>
         ${info.copyright}</p>
 
-        ${info.axes.length ? `
-        <p><strong>Variable font axes</strong><br>
-        ${info.axes.map(axis =>
-            `${axis.name} (${axis.tag}) &rarr; ${axis.min} to ${axis.max}, default &rarr; ${axis.default}`
-            ).join('<br>')}</p>` : ''}
+        <p><strong>License</strong><br>
+        ${info.license}<br>
+        ${info.licenseURL !== 'Unknown' ? `License URL &rarr; ${info.licenseURL}</p>` : '</p>'}
     `;
   }
 
@@ -140,7 +147,11 @@ export function getFontInformation(font, filename) {
     // Author info
     copyright: extractFontName(names.windows?.copyright),
     manufacturer: extractFontName(names.windows?.manufacturer),
+    manufacturerURL: extractFontName(names.windows?.manufacturerURL),
     designer: extractFontName(names.windows?.designer),
+    designerURL: extractFontName(names.windows?.designerURL),
+    license: extractFontName(names.windows?.license),
+    licenseURL: extractFontName(names.windows?.licenseURL),
     vendorID: os2?.achVendID || 'Unknown',
 
     // Technical details
@@ -152,6 +163,7 @@ export function getFontInformation(font, filename) {
 
     // Features
     isFixedPitch: font.tables.post?.isFixedPitch ? 'Yes' : 'No',
+    fontStyle: extractFontStyle(font),
     features: extractOpenTypeFeatures(font),
 
     // Variable font axes
@@ -241,6 +253,41 @@ function extractFontName(nameEntry) {
 
   console.log('No keys found, returning Unknown');
   return 'Unknown';
+}
+
+/**
+ * Extracts font style (upright/italic/oblique) from OpenType tables
+ * @param {Object} font - OpenType.js font object
+ * @returns {string} Font style: 'Upright', 'Italic', or 'Oblique'
+ */
+function extractFontStyle(font) {
+  // Check OS/2 table fsSelection field first (most reliable)
+  if (font.tables.os2 && font.tables.os2.fsSelection !== undefined) {
+    const fsSelection = font.tables.os2.fsSelection;
+
+    // Bit 9 (512): Oblique/Slanted
+    if (fsSelection & 512) {
+      return 'Oblique';
+    }
+
+    // Bit 0 (1): Italic
+    if (fsSelection & 1) {
+      return 'Italic';
+    }
+  }
+
+  // Fallback to head table macStyle field
+  if (font.tables.head && font.tables.head.macStyle !== undefined) {
+    const macStyle = font.tables.head.macStyle;
+
+    // Bit 1 (2): Italic
+    if (macStyle & 2) {
+      return 'Italic';
+    }
+  }
+
+  // If no italic/oblique flags are set, it's upright/roman
+  return 'Upright';
 }
 
 function extractOpenTypeFeatures(font) {
