@@ -108,17 +108,39 @@ export function getFontInformation(font, filename) {
     fvarAxes: fvar?.axes
   });
 
-  const info = {
-    // Basic info
+  // Debug font names structure
+  console.log('Font names structure:', names);
+  console.log('Available name properties:', Object.keys(names || {}));
+
+  // Check what the actual property is
+  const nameKeys = Object.keys(names || {});
+  if (nameKeys.length > 0) {
+    console.log(`First property name: "${nameKeys[0]}", value:`, names[nameKeys[0]]);
+
+    // If it's the windows platform, let's see what's inside
+    if (nameKeys[0] === 'windows' && names.windows) {
+      console.log('Windows platform name IDs:', Object.keys(names.windows));
+      console.log('Full windows names object:', names.windows);
+    }
+  }
+
+  // Debug specific name access
+  console.log('names.fontFamily:', names.fontFamily);
+  console.log('names.fullName:', names.fullName);
+  console.log('names.version:', names.version);
+  console.log('names.copyright:', names.copyright);
+  console.log('names.manufacturer:', names.manufacturer);
+  console.log('names.designer:', names.designer);  const info = {
+    // Basic info - using preferredFamily (Name ID 16) if available, fallback to fontFamily (Name ID 1)
     filename,
-    fontFamily: names.fontFamily?.en || 'Unknown',
-    fullName: names.fullName?.en || 'Unknown',
-    version: names.version?.en || 'Unknown',
+    fontFamily: extractFontName(names.windows?.preferredFamily) !== 'Unknown' ? extractFontName(names.windows?.preferredFamily) : extractFontName(names.windows?.fontFamily),
+    fullName: extractFontName(names.windows?.fullName),          // Name ID 4: Full font name
+    version: extractFontName(names.windows?.version),           // Name ID 5: Version string
 
     // Author info
-    copyright: names.copyright?.en || 'Unknown',
-    manufacturer: names.manufacturer?.en || 'Unknown',
-    designer: names.designer?.en || 'Unknown',
+    copyright: extractFontName(names.windows?.copyright),
+    manufacturer: extractFontName(names.windows?.manufacturer),
+    designer: extractFontName(names.windows?.designer),
     vendorID: os2?.achVendID || 'Unknown',
 
     // Technical details
@@ -145,7 +167,82 @@ console.log('Full font axes information:', {
 return info;
 }
 
-// Helper functions remain the same
+// Helper functions
+/**
+ * Extracts a name from the OpenType names table using proper name ID structure
+ * @param {Object} names - The font.names object
+ * @param {number} nameId - OpenType name ID (1=family, 4=full name, 5=version, etc.)
+ * @returns {string} The extracted name or 'Unknown'
+ */
+function extractNameByID(names, nameId) {
+  if (!names) return 'Unknown';
+
+  // Try different platforms in order of preference
+  const platforms = ['windows', 'macintosh', 'unicode'];
+
+  for (const platform of platforms) {
+    if (names[platform] && names[platform][nameId]) {
+      const nameEntry = names[platform][nameId];
+
+      // Try different language codes
+      const languageCodes = ['en', 'en-US', 'en-GB', 'und', '0', '1033']; // 1033 is Windows English
+
+      for (const code of languageCodes) {
+        if (nameEntry[code]) {
+          return nameEntry[code];
+        }
+      }
+
+      // If no language code matches, get the first available value
+      const availableKeys = Object.keys(nameEntry);
+      if (availableKeys.length > 0) {
+        return nameEntry[availableKeys[0]];
+      }
+    }
+  }
+
+  return 'Unknown';
+}
+
+/**
+ * Safely extracts a name value from font names table
+ * Tries multiple language codes and falls back to the first available value
+ * @param {Object} nameEntry - Name entry from font.names
+ * @returns {string} The extracted name or 'Unknown'
+ */
+function extractFontName(nameEntry) {
+  console.log('extractFontName called with:', nameEntry);
+
+  if (!nameEntry) {
+    console.log('nameEntry is null/undefined, returning Unknown');
+    return 'Unknown';
+  }
+
+  // Try common language codes in order of preference
+  const languageCodes = ['en', 'en-US', 'en-GB', 'und', '0']; // 'und' = undefined language, '0' = language ID 0
+
+  for (const code of languageCodes) {
+    if (nameEntry[code]) {
+      console.log(`Found name for language code '${code}':`, nameEntry[code]);
+      return nameEntry[code];
+    }
+  }
+
+  // If no standard language codes work, get the first available value
+  const availableKeys = Object.keys(nameEntry);
+  console.log('Available keys in nameEntry:', availableKeys);
+
+  if (availableKeys.length > 0) {
+    const firstKey = availableKeys[0];
+    const firstValue = nameEntry[firstKey];
+    console.log(`Using first available key '${firstKey}':`, firstValue);
+    return firstValue;
+  }
+
+  console.log('No keys found, returning Unknown');
+  return 'Unknown';
+}
+
 function extractOpenTypeFeatures(font) {
   const features = [];
   if (font.tables.gsub) {
