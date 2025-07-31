@@ -47,9 +47,9 @@ export class FontInfoRenderer {
         <p><strong>Copyright</strong><br>
         ${info.copyright}</p>
 
-        <p><strong>License</strong><br>
+        <p><strong>Licence</strong><br>
         ${info.license}<br>
-        ${info.licenseURL !== 'Unknown' ? `License URL &rarr; ${info.licenseURL}</p>` : '</p>'}
+        ${info.licenseURL !== 'Unknown' ? `Licence URL &rarr; ${info.licenseURL}</p>` : '</p>'}
     `;
   }
 
