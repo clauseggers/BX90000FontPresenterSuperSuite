@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <title>TurboTiler BX90000 Fascination</title>
+  <!-- Import the OpenType.js library first -->
+  <script src="./opentypejs/opentype.js"></script>
+  <!-- Import our modular JavaScript as a module -->
+  <script type="module" src="./turbotiler/TurboTiler.js"></script>
+  <!-- CSS -->
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="./turbotiler/TurboTiler.css">
+</head>
+<body>
+  <div id="top-buttons">
+    <button id="background-toggle">Swap colours</button>
+    <button id="fullscreen-button">Fullscreen</button>
+  </div>
+
+  <div id="drop-text">
+    Drop your TTF or OTF font here
+  </div>
+
+  <div id="zoom-container">
+    <div id="grid-container"></div>
+  </div>
+</body>
+</html>

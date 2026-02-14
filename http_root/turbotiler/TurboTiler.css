@@ -1,0 +1,82 @@
+/* TurboTiler BX90000 Fascination - Grid-based glyph animator with camera zoom */
+
+/* Top button bar */
+#top-buttons {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  z-index: 10000;
+  display: flex;
+  gap: 5px;
+}
+
+#top-buttons button {
+  font-size: 0.7rem;
+  cursor: pointer;
+  font-style: normal;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 23px;
+  padding-left: 8px;
+  padding-right: 8px;
+  background: transparent;
+  color: var(--black);
+  border: 1px solid var(--black);
+  opacity: 1;
+  border-radius: 5px;
+  -webkit-transition: .2s;
+  transition: .2s;
+}
+
+#zoom-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transform-origin: center center;
+  transform: scale(1.1);  /* Initial grid view scale */
+  will-change: transform;
+  transition: transform 4s ease-in-out;
+}
+
+#grid-container {
+  display: grid;
+  /* Grid columns set dynamically in JavaScript based on viewport size */
+  gap: 2px;
+  width: 90vw;
+  height: 90vh;
+}
+
+.grid-cell {
+  width: 100%;
+  /* height determined by aspect-ratio */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: transparent;
+  place-self: center;
+}
+
+.grid-cell-content {
+  color: var(--black);
+  font-size: 750%;  /* Font size relative to cell height - scales with cell size */
+  text-align: center;
+  line-height: 1;
+  user-select: none;
+  will-change: font-variation-settings, font-feature-settings;
+  /* Fonts rendered at max size for crisp display when zoomed in */
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Animation states */
+.paused {
+  animation-play-state: paused;
+}
