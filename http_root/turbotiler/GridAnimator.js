@@ -109,7 +109,8 @@ export class GridAnimator {
 
     // Reset zoom transform immediately without transition
     this.zoomContainer.style.transition = 'none';
-    this.zoomContainer.style.transform = `translate(0px, 0px) scale(${this.zoomScale.min})`;
+    this.zoomContainer.style.transform =
+      `perspective(1px) translate3d(0px, 0px, 0) scale3d(${this.zoomScale.min}, ${this.zoomScale.min}, 1)`;
 
     // Force multiple reflows to ensure the transform is fully applied
     void this.zoomContainer.offsetHeight;
@@ -320,7 +321,7 @@ export class GridAnimator {
     }
 
     this.zoomContainer.style.transform =
-      `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+      `perspective(1px) translate3d(${translateX}px, ${translateY}px, 0) scale3d(${scale}, ${scale}, 1)`;
   }
 
   /**

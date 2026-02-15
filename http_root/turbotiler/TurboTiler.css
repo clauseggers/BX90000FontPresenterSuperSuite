@@ -48,7 +48,10 @@
   height: 100vh;
   flex: 0 0 auto;
   transform-origin: center center;
-  transform: scale(1);
+  transform: perspective(1px) translate3d(0, 0, 0) scale3d(1, 1, 1);
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  contain: layout paint style;
   will-change: transform;
   transition: transform 4s ease-in-out;
 }
