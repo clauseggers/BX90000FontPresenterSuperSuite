@@ -14,6 +14,9 @@ export class GlyphGrid {
     this.gridCols = 0;
     this.gridRows = 0;
     this.container = null;
+    this.zoomOutScale = 1;
+    this.containerWidth = 0;
+    this.containerHeight = 0;
   }
 
   /**
@@ -23,15 +26,17 @@ export class GlyphGrid {
    * @param {Array} axes - Variable font axes (if any)
    * @param {Array} features - OpenType features (if any)
    * @param {string} fontFamily - The font family name to apply
-   * @param {Object} font - OpenType.js font object for metrics
+  * @param {Object} font - OpenType.js font object for metrics
+  * @param {number} zoomOutScale - Current zoomed-out container scale
    */
-  populate(container, glyphList, axes, features, fontFamily, font) {
+  populate(container, glyphList, axes, features, fontFamily, font, zoomOutScale = 1) {
     this.glyphList = glyphList;
     this.axes = axes;
     this.features = features;
     this.fontFamily = fontFamily;
     this.font = font;
     this.container = container;
+    this.zoomOutScale = zoomOutScale;
 
     // Calculate aspect ratio based on font metrics
     this.cellAspectRatio = this.calculateFontAspectRatio(font);
@@ -40,19 +45,42 @@ export class GlyphGrid {
     container.innerHTML = '';
     this.cells = [];
 
-    // Calculate grid size based on viewport and desired cell count
-    const minCellSize = 120;
-    // Cell count based on VISIBLE area at scale 0.11
-    // The grid is 9x larger, but we want the same cell density when viewed
-    const viewportWidth = window.innerWidth * 0.9;
-    const viewportHeight = window.innerHeight * 0.9;
-    this.gridCols = Math.floor(viewportWidth / minCellSize);
-    this.gridRows = Math.floor(viewportHeight / minCellSize);
+    // Deterministic sizing model:
+    // - At scale 1.0, one cell equals one viewport.
+    // - At zoomed-out scale, many cells are visible.
+    this.viewportWidth = container.parentElement?.clientWidth || window.innerWidth;
+    this.viewportHeight = container.parentElement?.clientHeight || window.innerHeight;
+
+    const cellWidthFactor = 0.3;
+    const cellHeightFactor = 0.7;
+    const minCoverageFactor = 1.06; // slight overscan to avoid edge whitespace
+    const overscanCells = 1;
+    const minGridCols = 13;
+    const minGridRows = 13;
+
+    const requiredCols = Math.ceil(minCoverageFactor / (this.zoomOutScale * cellWidthFactor));
+    const requiredRows = Math.ceil(minCoverageFactor / (this.zoomOutScale * cellHeightFactor));
+
+    this.gridCols = Math.max(minGridCols, requiredCols + overscanCells);
+    this.gridRows = Math.max(minGridRows, requiredRows + overscanCells);
+
+    // Keep dimensions odd so viewport center lands on a cell center, not a boundary.
+    if (this.gridCols % 2 === 0) this.gridCols += 1;
+    if (this.gridRows % 2 === 0) this.gridRows += 1;
+
+    const cellWidth = this.viewportWidth * cellWidthFactor;
+    const cellHeight = this.viewportHeight * cellHeightFactor;
+    this.containerWidth = this.gridCols * cellWidth;
+    this.containerHeight = this.gridRows * cellHeight;
+
+    // Keep CSS container dimensions in sync with layout math.
+    container.style.width = `${this.containerWidth}px`;
+    container.style.height = `${this.containerHeight}px`;
     const cellCount = this.gridCols * this.gridRows;
 
     // Set explicit grid columns and rows in CSS
-    container.style.gridTemplateColumns = `repeat(${this.gridCols}, 1fr)`;
-    container.style.gridTemplateRows = `repeat(${this.gridRows}, 1fr)`;
+    container.style.gridTemplateColumns = `repeat(${this.gridCols}, ${cellWidth}px)`;
+    container.style.gridTemplateRows = `repeat(${this.gridRows}, ${cellHeight}px)`;
 
     // Create grid cells
     for (let i = 0; i < cellCount; i++) {
@@ -99,11 +127,6 @@ export class GlyphGrid {
   createCell() {
     const cell = document.createElement('div');
     cell.className = 'grid-cell';
-
-    // Apply calculated aspect ratio
-    if (this.cellAspectRatio) {
-      cell.style.aspectRatio = this.cellAspectRatio;
-    }
 
     const content = document.createElement('div');
     content.className = 'grid-cell-content';
@@ -179,8 +202,15 @@ export class GlyphGrid {
   randomizeFeatures() {
     if (this.features.length === 0) return '';
 
-    // Randomly enable/disable each feature (50% chance)
-    const settings = this.features.map(feature => {
+    const randomizablePattern = /^(ss\d\d|cv\d\d|salt|aalt|case|ordn|frac|sinf|sups|subs|pnum|tnum|onum|lnum|zero)$/;
+
+    // Only randomize discretionary features. Required shaping features must remain untouched.
+    const randomizableFeatures = this.features.filter(feature => randomizablePattern.test(feature));
+    if (randomizableFeatures.length === 0) {
+      return 'normal';
+    }
+
+    const settings = randomizableFeatures.map(feature => {
       const enabled = Math.random() > 0.5 ? 1 : 0;
       return `"${feature}" ${enabled}`;
     });
@@ -196,27 +226,29 @@ export class GlyphGrid {
    * Get a random cell with calculated position
    * @returns {Object|null} Cell info with element, index, and position
    */
-  getRandomCell() {
+  getCellInfoByIndex(index) {
     if (this.cells.length === 0 || !this.container) return null;
 
-    const index = Math.floor(Math.random() * this.cells.length);
     const cell = this.cells[index];
 
     // Calculate position based on grid layout
-    // Grid container is centered and is 90vw x 90vh
+    // Grid container is centered and sized to the unscaled layout dimensions
     const row = Math.floor(index / this.gridCols);
     const col = index % this.gridCols;
 
-    // Calculate container dimensions (90% of viewport)
-    const containerWidth = window.innerWidth * 0.9;
-    const containerHeight = window.innerHeight * 0.9;
+    // Calculate container dimensions (must match populate())
+    const viewportWidth = this.viewportWidth || this.container?.parentElement?.clientWidth || window.innerWidth;
+    const viewportHeight = this.viewportHeight || this.container?.parentElement?.clientHeight || window.innerHeight;
+    const containerWidth = this.containerWidth || (viewportWidth / this.zoomOutScale);
+    const containerHeight = this.containerHeight || (viewportHeight / this.zoomOutScale);
 
     // Container is centered in viewport
-    const containerLeft = (window.innerWidth - containerWidth) / 2;
-    const containerTop = (window.innerHeight - containerHeight) / 2;
+    const containerLeft = (viewportWidth - containerWidth) / 2;
+    const containerTop = (viewportHeight - containerHeight) / 2;
 
     // Calculate cell dimensions (including gap)
-    const gap = 2; // matches CSS gap
+    const computedStyles = window.getComputedStyle(this.container);
+    const gap = parseFloat(computedStyles.columnGap || computedStyles.gap || '0') || 0;
     const cellWidth = (containerWidth - gap * (this.gridCols - 1)) / this.gridCols;
     const cellHeight = (containerHeight - gap * (this.gridRows - 1)) / this.gridRows;
 
@@ -228,8 +260,34 @@ export class GlyphGrid {
       element: cell,
       index: index,
       x: x,
-      y: y
+      y: y,
+      cellWidth: cellWidth,
+      cellHeight: cellHeight
     };
+  }
+
+  /**
+   * Get a random cell with calculated position
+   * @returns {Object|null} Cell info with element, index, and position
+   */
+  getRandomCell() {
+    if (this.cells.length === 0 || !this.container) return null;
+
+    const index = Math.floor(Math.random() * this.cells.length);
+    return this.getCellInfoByIndex(index);
+  }
+
+  /**
+   * Get the center cell with calculated position
+   * @returns {Object|null} Cell info with element, index, and position
+   */
+  getCenterCell() {
+    if (this.cells.length === 0 || !this.container) return null;
+
+    const centerRow = Math.floor(this.gridRows / 2);
+    const centerCol = Math.floor(this.gridCols / 2);
+    const index = centerRow * this.gridCols + centerCol;
+    return this.getCellInfoByIndex(index);
   }
 
   /**

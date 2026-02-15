@@ -23,7 +23,7 @@ class TurboTiler {
 
     // Initialize grid and animator
     this.glyphGrid = new GlyphGrid();
-    this.gridAnimator = new GridAnimator(this.zoomContainer, this.glyphGrid);
+    this.gridAnimator = new GridAnimator(this.gridContainer, this.glyphGrid);
 
     // Initialize font loader
     this.fontLoader = new FontLoader({
@@ -58,6 +58,11 @@ class TurboTiler {
     if (backgroundToggle) {
       backgroundToggle.addEventListener('click', () => {
         this.uiControls.toggleColorScheme();
+
+        // Rebuild layout after colour variable changes to avoid stale clipped state.
+        if (this.fontLoader.currentFont) {
+          this.rebuildForViewportChange();
+        }
       });
     }
 
@@ -66,6 +71,13 @@ class TurboTiler {
 
     // Window resize handler
     window.addEventListener('resize', this.handleResize.bind(this));
+
+    // Fullscreen transitions do not always emit a reliable resize sequence.
+    // Force the same relayout path on enter/exit fullscreen.
+    document.addEventListener('fullscreenchange', this.handleResize.bind(this));
+    document.addEventListener('webkitfullscreenchange', this.handleResize.bind(this));
+    document.addEventListener('mozfullscreenchange', this.handleResize.bind(this));
+    document.addEventListener('MSFullscreenChange', this.handleResize.bind(this));
   }
 
   handleKeyPress(event) {
@@ -92,37 +104,58 @@ class TurboTiler {
   }
 
   handleResize() {
-    // Immediately pause animation and reset transform to prevent broken coordinates
-    if (this.fontLoader.currentFont) {
-      this.gridAnimator.pause();
-      this.gridAnimator.zoomContainer.style.transition = 'none';
-      this.gridAnimator.zoomContainer.style.transform = 'translate(0px, 0px) scale(1.1)';
-      // Force reflow
-      void this.gridAnimator.zoomContainer.offsetHeight;
+    if (!this.fontLoader.currentFont) {
+      return;
     }
 
-    if (this.resizeTimeout) {
-      clearTimeout(this.resizeTimeout);
+    this.scheduleViewportRebuilds();
+  }
+
+  scheduleViewportRebuilds() {
+    if (this.resizeTimeouts) {
+      this.resizeTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
     }
 
-    this.resizeTimeout = setTimeout(() => {
-      // Repopulate grid with new dimensions if font is loaded
-      if (this.fontLoader.currentFont) {
-        // Full reset of animation state
+    // Fullscreen transitions may settle in multiple steps.
+    // Rebuild a few times so final viewport dimensions are always captured.
+    const delays = [120, 450, 900];
+    this.resizeTimeouts = delays.map(delay => setTimeout(() => {
+      this.rebuildForViewportChange();
+    }, delay));
+  }
+
+  rebuildForViewportChange() {
+    if (!this.fontLoader.currentFont) {
+      return;
+    }
+
+    const initialWidth = window.innerWidth;
+    const initialHeight = window.innerHeight;
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const settledWidth = window.innerWidth;
+        const settledHeight = window.innerHeight;
+
+        // Fullscreen transitions can report intermediate sizes.
+        // Retry once more if dimensions are still moving.
+        if (settledWidth !== initialWidth || settledHeight !== initialHeight) {
+          this.rebuildForViewportChange();
+          return;
+        }
+
+        this.syncZoomOutScaleToViewport();
+        this.gridAnimator.pause();
         this.gridAnimator.reset();
-
-        // Repopulate the grid with new dimensions
         this.populateGrid();
 
-        // Wait for layout to complete before starting animation
-        // Use double RAF to ensure paint has completed
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
             this.gridAnimator.start();
           });
         });
-      }
-    }, 250);
+      });
+    });
   }
 
   handleFontDrop(arrayBuffer) {
@@ -158,13 +191,15 @@ class TurboTiler {
     }
 
     // Populate the grid
+    this.syncZoomOutScaleToViewport();
     this.glyphGrid.populate(
       this.gridContainer,
       glyphList,
       axes,
       features,
       fontFamily,
-      font
+      font,
+      this.gridAnimator.zoomScale.min
     );
 
     // Start animation
@@ -185,6 +220,7 @@ class TurboTiler {
    */
   extractGlyphs(font) {
     const glyphs = [];
+    const invisiblePattern = /[\p{C}\p{M}\p{Z}]/u;
 
     for (let i = 0; i < font.glyphs.length; i++) {
       const glyph = font.glyphs.get(i);
@@ -196,7 +232,18 @@ class TurboTiler {
 
       // Get character from unicode
       const char = String.fromCodePoint(glyph.unicode);
+
+      // Skip control, combining, separator, and other non-standalone glyphs
+      if (invisiblePattern.test(char)) {
+        continue;
+      }
+
       glyphs.push(char);
+    }
+
+    // Fallback to at least one visible placeholder if filtering removes everything
+    if (glyphs.length === 0) {
+      glyphs.push('A');
     }
 
     return glyphs;
@@ -248,6 +295,8 @@ class TurboTiler {
   populateGrid() {
     if (!this.currentFont) return;
 
+    this.syncZoomOutScaleToViewport();
+
     const glyphList = this.extractGlyphs(this.currentFont);
     const axes = this.extractAxes(this.currentFont);
     const features = this.extractFeatures(this.currentFont);
@@ -258,8 +307,18 @@ class TurboTiler {
       axes,
       features,
       this.currentFontFamily,
-      this.currentFont
+      this.currentFont,
+      this.gridAnimator.zoomScale.min
     );
+  }
+
+  syncZoomOutScaleToViewport() {
+    if (!this.gridAnimator) return;
+
+    // Geometry-consistent fixed zoom-out scale.
+    // With current grid model (13 rows/cols minimum and 0.4 viewport cell ratio),
+    // 0.19 gives near full-frame fill without bottom cropping on fullscreen.
+    this.gridAnimator.zoomScale.min = 0.19;
   }
 }
 

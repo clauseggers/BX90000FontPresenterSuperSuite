@@ -38,18 +38,19 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  transform-origin: center center;
-  transform: scale(1.1);  /* Initial grid view scale */
-  will-change: transform;
-  transition: transform 4s ease-in-out;
 }
 
 #grid-container {
   display: grid;
   /* Grid columns set dynamically in JavaScript based on viewport size */
-  gap: 2px;
-  width: 90vw;
-  height: 90vh;
+  gap: 0;
+  width: 100vw;
+  height: 100vh;
+  flex: 0 0 auto;
+  transform-origin: center center;
+  transform: scale(1);
+  will-change: transform;
+  transition: transform 4s ease-in-out;
 }
 
 .grid-cell {
@@ -60,14 +61,14 @@
   justify-content: center;
   overflow: hidden;
   background: transparent;
-  place-self: center;
+  place-self: stretch;
 }
 
 .grid-cell-content {
   color: var(--black);
-  font-size: 750%;  /* Font size relative to cell height - scales with cell size */
+  font-size: 34vh;
   text-align: center;
-  line-height: 1;
+  line-height: 0.9;
   user-select: none;
   will-change: font-variation-settings, font-feature-settings;
   /* Fonts rendered at max size for crisp display when zoomed in */

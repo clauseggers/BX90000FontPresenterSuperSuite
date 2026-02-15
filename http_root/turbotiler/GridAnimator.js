@@ -16,25 +16,29 @@ export class GridAnimator {
       ZOOM_OUT: 'zoom_out'
     };
 
-    this.currentState = this.states.ZOOM_OUT;
+      this.currentState = this.states.DWELL;
     this.isPaused = false;
 
     // Timing (in milliseconds)
     this.timing = {
-      zoomIn: 4000,    // 4 seconds
-      dwell: 3000,     // 3 seconds
-      zoomOut: 4000    // 4 seconds
+      zoomIn: 6000,    // 6 seconds
+      dwell: 2000,     // 2 seconds
+      zoomOut: 6000,   // 6 seconds
+      dwellOut: 2000   // Reserved for loop mode
     };
 
     // Zoom parameters
-    // Using standard scale-up approach with optimized font size
-    // 10vmin × 1.1 = 11vmin in grid | 10vmin × 10 = 100vmin zoomed
-    this.zoomScale = {
-      min: 1.1,      // Zoomed out (grid fills viewport with margin)
-      max: 10.0      // Zoomed in (single glyph)
+    // Inverted approach: zoomed-in state uses native scale (1.0) for crisp rendering,
+    // zoomed-out state scales down to show the full grid.
+      this.zoomScale = {
+        min: 0.12,     // Zoomed out overview
+        max: 1.0       // Zoomed in (native scale for sharp glyphs)
     };
 
-    this.currentScale = 1.1;
+    // Continuous mode: keep cycling between zoomed-in and zoomed-out states.
+    this.loopEnabled = true;
+
+    this.currentScale = this.zoomScale.min;
     this.currentTarget = { x: 0, y: 0 };
     this.nextTarget = null;
 
@@ -49,13 +53,39 @@ export class GridAnimator {
     this.stateTransitionTimers = [];
   }
 
+  getViewportDimensions() {
+    const viewportElement = this.zoomContainer?.parentElement;
+    return {
+      width: viewportElement?.clientWidth || window.innerWidth,
+      height: viewportElement?.clientHeight || window.innerHeight
+    };
+  }
+
   /**
    * Start the animation loop
    */
   start() {
     this.isPaused = false;
     this.stateStartTime = performance.now();
-    this.scheduleNextCycle();
+    // Start from a one-cell zoomed-in view, then animate out.
+    this.nextTarget = this.glyphGrid.getCenterCell() || this.pickRandomTarget();
+    this.currentTarget = this.nextTarget;
+    const initialScale = this.calculateCellFitScale(this.currentTarget);
+    this.currentScale = initialScale;
+
+    this.zoomContainer.style.transition = 'none';
+    this.applyZoomTransform(initialScale, this.currentTarget.x, this.currentTarget.y);
+    void this.zoomContainer.offsetHeight;
+    this.zoomContainer.style.transition = `transform ${this.timing.zoomOut}ms ease-in-out`;
+
+    // Briefly hold the one-cell view, then explicitly zoom out.
+    this.currentState = this.states.ZOOM_OUT;
+    const initialTimer = setTimeout(() => {
+      if (!this.isPaused) {
+        this.startZoomOut();
+      }
+    }, 500);
+    this.stateTransitionTimers.push(initialTimer);
   }
 
   /**
@@ -67,15 +97,15 @@ export class GridAnimator {
     this.clearStateTransitionTimers();
 
     // Reset state
-    this.currentState = this.states.ZOOM_OUT;
+      this.currentState = this.states.DWELL;
     this.isPaused = false;
-    this.currentScale = 1.1;
+    this.currentScale = this.zoomScale.min;
     this.currentTarget = { x: 0, y: 0 };
     this.nextTarget = null;
 
     // Reset zoom transform immediately without transition
     this.zoomContainer.style.transition = 'none';
-    this.zoomContainer.style.transform = 'translate(0px, 0px) scale(1.1)';
+    this.zoomContainer.style.transform = `translate(0px, 0px) scale(${this.zoomScale.min})`;
 
     // Force multiple reflows to ensure the transform is fully applied
     void this.zoomContainer.offsetHeight;
@@ -116,6 +146,10 @@ export class GridAnimator {
   scheduleNextCycle() {
     if (this.isPaused) return;
 
+    if (!this.loopEnabled && this.currentState === this.states.ZOOM_OUT) {
+      return;
+    }
+
     // Move to next state
     switch (this.currentState) {
       case this.states.ZOOM_OUT:
@@ -137,11 +171,14 @@ export class GridAnimator {
    * Start zoom in phase
    */
   startZoomIn() {
-    // Pick random target cell
+    // Pick random target cell for zoomed-in state.
     this.nextTarget = this.pickRandomTarget();
 
+    // Fit zoom-in to a single glyph cell.
+    const targetScale = this.calculateCellFitScale(this.nextTarget);
+
     // Apply zoom transform
-    this.applyZoomTransform(this.zoomScale.max, this.nextTarget.x, this.nextTarget.y);
+    this.applyZoomTransform(targetScale, this.nextTarget.x, this.nextTarget.y);
 
     // Schedule individual cell changes during first 3.5 seconds
     // Last 500ms before dwell is kept static
@@ -150,12 +187,29 @@ export class GridAnimator {
     // Schedule next state
     const timer = setTimeout(() => {
       if (!this.isPaused) {
-        this.currentScale = this.zoomScale.max;
+        this.currentScale = targetScale;
         this.currentTarget = this.nextTarget;
         this.scheduleNextCycle();
       }
     }, this.timing.zoomIn);
     this.stateTransitionTimers.push(timer);
+  }
+
+  /**
+    * Calculate zoom scale that isolates a single cell in viewport
+   * @param {Object} target - Target info from getRandomCell()
+   * @returns {number} Scale factor
+   */
+  calculateCellFitScale(target) {
+    if (!target || !target.cellWidth || !target.cellHeight) {
+      return this.zoomScale.max;
+    }
+
+    const { width, height } = this.getViewportDimensions();
+    const fitX = width / target.cellWidth;
+
+    // Width-fit to isolate one column/cell and keep target centered.
+    return fitX * 0.80;
   }
 
   /**
@@ -177,7 +231,12 @@ export class GridAnimator {
    * Start zoom out phase
    */
   startZoomOut() {
-    // Zoom back to original scale
+    this.currentState = this.states.ZOOM_OUT;
+
+    // Always set transition explicitly for this phase.
+    this.zoomContainer.style.transition = `transform ${this.timing.zoomOut}ms ease-in-out`;
+
+    // Zoom back to centered overview scale
     this.applyZoomTransform(this.zoomScale.min, 0, 0);
 
     // Start glyph changes immediately during zoom out
@@ -188,7 +247,15 @@ export class GridAnimator {
       if (!this.isPaused) {
         this.currentScale = this.zoomScale.min;
         this.currentTarget = { x: 0, y: 0 };
-        this.scheduleNextCycle();
+
+        if (this.loopEnabled) {
+          const dwellOutTimer = setTimeout(() => {
+            if (!this.isPaused) {
+              this.scheduleNextCycle();
+            }
+          }, this.timing.dwellOut);
+          this.stateTransitionTimers.push(dwellOutTimer);
+        }
       }
     }, this.timing.zoomOut);
     this.stateTransitionTimers.push(stateTimer);
@@ -200,49 +267,22 @@ export class GridAnimator {
    */
   pickRandomTarget() {
     const cellInfo = this.glyphGrid.getRandomCell();
-    if (!cellInfo) return { x: 0, y: 0 };
+    if (!cellInfo) return { x: 0, y: 0, cellWidth: 0, cellHeight: 0 };
 
     // Calculate offset from viewport center
     // Cell positions are in unscaled grid space, which is what we need
-    const centerX = window.innerWidth / 2;
-    const centerY = window.innerHeight / 2;
+    const { width, height } = this.getViewportDimensions();
+    const centerX = width / 2;
+    const centerY = height / 2;
 
     const offsetX = cellInfo.x - centerX;
     const offsetY = cellInfo.y - centerY;
 
-    // Add bounds checking to prevent selecting cells too far from center
-    // At max zoom (1.0 / 0.11 = ~9x), we don't want to pan more than half the grid size
-    const maxOffset = Math.min(window.innerWidth, window.innerHeight) * 0.35;
-    const distance = Math.sqrt(offsetX * offsetX + offsetY * offsetY);
-
-    // If cell is too far, try to find a closer one (max 5 attempts)
-    if (distance > maxOffset) {
-      for (let attempt = 0; attempt < 5; attempt++) {
-        const newCellInfo = this.glyphGrid.getRandomCell();
-        if (!newCellInfo) break;
-
-        const newOffsetX = newCellInfo.x - centerX;
-        const newOffsetY = newCellInfo.y - centerY;
-        const newDistance = Math.sqrt(newOffsetX * newOffsetX + newOffsetY * newOffsetY);
-
-        if (newDistance <= maxOffset) {
-          return {
-            x: newOffsetX,
-            y: newOffsetY
-          };
-        }
-      }
-      // If we couldn't find a close cell, clamp the offset
-      const scale = maxOffset / distance;
-      return {
-        x: offsetX * scale,
-        y: offsetY * scale
-      };
-    }
-
     return {
       x: offsetX,
-      y: offsetY
+      y: offsetY,
+      cellWidth: cellInfo.cellWidth,
+      cellHeight: cellInfo.cellHeight
     };
   }
 
@@ -253,11 +293,10 @@ export class GridAnimator {
    * @param {number} targetY - Target Y offset from center
    */
   applyZoomTransform(scale, targetX, targetY) {
-    // Calculate translation needed to keep target cell centered
-    // With transform-origin at center, we need to translate by -offset * scale
-    // to counteract the scaling displacement
-    const translateX = -targetX * scale;
-    const translateY = -targetY * scale;
+    // targetX/targetY are offsets from viewport center.
+    // With center-origin scaling, translate must counter the scaled offset.
+    const translateX = -(targetX * scale);
+    const translateY = -(targetY * scale);
 
     this.zoomContainer.style.transform =
       `translate(${translateX}px, ${translateY}px) scale(${scale})`;
