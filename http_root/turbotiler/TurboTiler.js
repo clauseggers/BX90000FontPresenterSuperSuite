@@ -238,7 +238,7 @@ class TurboTiler {
    */
   extractGlyphs(font) {
     const glyphs = [];
-    const invisiblePattern = /[\p{C}\p{M}\p{Z}]/u;
+    const excludedPattern = /[\p{White_Space}\p{M}\p{Diacritic}\p{C}]/u;
 
     for (let i = 0; i < font.glyphs.length; i++) {
       const glyph = font.glyphs.get(i);
@@ -251,8 +251,9 @@ class TurboTiler {
       // Get character from unicode
       const char = String.fromCodePoint(glyph.unicode);
 
-      // Skip control, combining, separator, and other non-standalone glyphs
-      if (invisiblePattern.test(char)) {
+      // Skip whitespace, combining marks, diacritics (including legacy spacing
+      // diacritics), and control/format/surrogate/private-use code points.
+      if (excludedPattern.test(char)) {
         continue;
       }
 
