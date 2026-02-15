@@ -49,6 +49,12 @@ export class GridAnimator {
     // Glyph change timers
     this.glyphChangeTimers = [];
 
+    // Glyph change settings (random range per cell, inclusive)
+    this.glyphChangeSettings = {
+      minPerCell: 12,
+      maxPerCell: 30
+    };
+
     // State transition timers
     this.stateTransitionTimers = [];
   }
@@ -350,9 +356,12 @@ export class GridAnimator {
     const cellCount = this.glyphGrid.getCellCount();
     if (cellCount === 0) return;
 
-    // Each cell gets random number of changes (5-15)
+    const minChanges = this.glyphChangeSettings.minPerCell;
+    const maxChanges = this.glyphChangeSettings.maxPerCell;
+
+    // Each cell gets random number of changes (inclusive range)
     for (let cellIndex = 0; cellIndex < cellCount; cellIndex++) {
-      const changesForThisCell = Math.floor(Math.random() * 11) + 5;
+      const changesForThisCell = Math.floor(Math.random() * (maxChanges - minChanges + 1)) + minChanges;
 
       // Generate random times for each change, weighted toward middle
       for (let changeNum = 0; changeNum < changesForThisCell; changeNum++) {
