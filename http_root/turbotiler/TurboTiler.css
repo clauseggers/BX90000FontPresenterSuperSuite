@@ -53,7 +53,6 @@
   backface-visibility: hidden;
   contain: layout paint style;
   will-change: transform;
-  transition: transform 4s ease-in-out;
 }
 
 .grid-cell {

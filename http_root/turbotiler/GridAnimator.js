@@ -27,6 +27,11 @@ export class GridAnimator {
       dwellOut: 1000   // Reserved for loop mode
     };
 
+    this.easing = {
+      zoomIn: 'cubic-bezier(0.5, 0, 0.6, 1)',
+      zoomOut: 'cubic-bezier(0.22, 1, 0.36, 1)'
+    };
+
     // Zoom parameters
     // Inverted approach: zoomed-in state uses native scale (1.0) for crisp rendering,
     // zoomed-out state scales down to show the full grid.
@@ -93,9 +98,9 @@ export class GridAnimator {
     this.currentScale = initialScale;
 
     this.zoomContainer.style.transition = 'none';
-    this.applyZoomTransform(this.currentTarget.x, this.currentTarget.y, initialScale, this.currentTarget.element);
+    this.applyZoomTransform(this.currentTarget.x, this.currentTarget.y, initialScale);
     void this.zoomContainer.offsetHeight;
-    this.zoomContainer.style.transition = `transform ${this.timing.zoomOut}ms ease-in-out`;
+    this.zoomContainer.style.transition = `transform ${this.timing.zoomOut}ms ${this.easing.zoomOut}`;
 
     // Briefly hold the one-cell view, then explicitly zoom out.
     this.currentState = this.states.ZOOM_OUT;
@@ -194,11 +199,14 @@ export class GridAnimator {
     // Pick random target cell for zoomed-in state.
     this.nextTarget = this.pickRandomTarget();
 
+    // Always set transition explicitly for this phase.
+    this.zoomContainer.style.transition = `transform ${this.timing.zoomIn}ms ${this.easing.zoomIn}`;
+
     // Fit zoom-in to a single glyph cell.
     const targetScale = this.calculateCellFitScale(this.nextTarget);
 
     // Apply zoom transform
-    this.applyZoomTransform(this.nextTarget.x, this.nextTarget.y, targetScale, this.nextTarget.element);
+    this.applyZoomTransform(this.nextTarget.x, this.nextTarget.y, targetScale);
 
     // Schedule individual cell changes during first 3.5 seconds
     // Last 500ms before dwell is kept static
@@ -254,7 +262,7 @@ export class GridAnimator {
     this.currentState = this.states.ZOOM_OUT;
 
     // Always set transition explicitly for this phase.
-    this.zoomContainer.style.transition = `transform ${this.timing.zoomOut}ms ease-in-out`;
+    this.zoomContainer.style.transition = `transform ${this.timing.zoomOut}ms ${this.easing.zoomOut}`;
 
     // Zoom back to centered overview scale
     this.applyZoomTransform(0, 0, this.zoomScale.min);
@@ -305,6 +313,7 @@ export class GridAnimator {
     return {
       x: offsetX,
       y: offsetY,
+      element: cellInfo.element,
       cellWidth: cellInfo.cellWidth,
       cellHeight: cellInfo.cellHeight
     };
@@ -316,31 +325,14 @@ export class GridAnimator {
    * @param {number} targetX - Target X offset from center
    * @param {number} targetY - Target Y offset from center
    */
-  applyZoomTransform(targetX, targetY, scale, targetElement = null) {
+  applyZoomTransform(targetX, targetY, scale) {
     // targetX/targetY are offsets from viewport center.
     // With center-origin scaling, translate must counter the scaled offset.
     const baseTranslateX = -(targetX * scale);
     const baseTranslateY = -(targetY * scale);
 
-    let translateX = baseTranslateX;
-    let translateY = baseTranslateY;
-
-    // Measurement-based correction for exact visual centering of the chosen cell.
-    if (targetElement) {
-      const rect = targetElement.getBoundingClientRect();
-      const { width, height } = this.getViewportDimensions();
-      const targetCenterX = rect.left + (rect.width / 2);
-      const targetCenterY = rect.top + (rect.height / 2);
-
-      const deltaX = (width / 2) - targetCenterX;
-      const deltaY = (height / 2) - targetCenterY;
-
-      translateX += deltaX;
-      translateY += deltaY;
-    }
-
     this.zoomContainer.style.transform =
-      `perspective(1px) translate3d(${translateX}px, ${translateY}px, 0) scale3d(${scale}, ${scale}, 1)`;
+      `perspective(1px) translate3d(${baseTranslateX}px, ${baseTranslateY}px, 0) scale3d(${scale}, ${scale}, 1)`;
   }
 
   /**
