@@ -161,6 +161,15 @@ class TurboTiler {
   handleFontDrop(arrayBuffer) {
     console.log('Font file dropped, loading...');
     console.log('ArrayBuffer size:', arrayBuffer.byteLength);
+
+    // New font should always restart animation from a clean state.
+    if (this.resizeTimeouts) {
+      this.resizeTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
+      this.resizeTimeouts = null;
+    }
+    this.gridAnimator.pause();
+    this.gridAnimator.reset();
+
     this.fontLoader.loadFont(arrayBuffer);
   }
 
@@ -192,6 +201,11 @@ class TurboTiler {
 
     // Populate the grid
     this.syncZoomOutScaleToViewport();
+
+    // Ensure old animation state is fully cleared before repopulating.
+    this.gridAnimator.pause();
+    this.gridAnimator.reset();
+
     this.glyphGrid.populate(
       this.gridContainer,
       glyphList,
@@ -203,7 +217,11 @@ class TurboTiler {
     );
 
     // Start animation
-    this.gridAnimator.start();
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        this.gridAnimator.start();
+      });
+    });
   }
 
   handleError(error) {

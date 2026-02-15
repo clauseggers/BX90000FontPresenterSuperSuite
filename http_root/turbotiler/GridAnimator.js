@@ -65,6 +65,10 @@ export class GridAnimator {
    * Start the animation loop
    */
   start() {
+    // Always start from a clean animation state (important when loading a new font).
+    this.clearGlyphChangeTimers();
+    this.clearStateTransitionTimers();
+
     this.isPaused = false;
     this.stateStartTime = performance.now();
     // Start from a one-cell zoomed-in view, then animate out.
@@ -74,7 +78,7 @@ export class GridAnimator {
     this.currentScale = initialScale;
 
     this.zoomContainer.style.transition = 'none';
-    this.applyZoomTransform(initialScale, this.currentTarget.x, this.currentTarget.y);
+    this.applyZoomTransform(this.currentTarget.x, this.currentTarget.y, initialScale, this.currentTarget.element);
     void this.zoomContainer.offsetHeight;
     this.zoomContainer.style.transition = `transform ${this.timing.zoomOut}ms ease-in-out`;
 
@@ -178,7 +182,7 @@ export class GridAnimator {
     const targetScale = this.calculateCellFitScale(this.nextTarget);
 
     // Apply zoom transform
-    this.applyZoomTransform(targetScale, this.nextTarget.x, this.nextTarget.y);
+    this.applyZoomTransform(this.nextTarget.x, this.nextTarget.y, targetScale, this.nextTarget.element);
 
     // Schedule individual cell changes during first 3.5 seconds
     // Last 500ms before dwell is kept static
@@ -237,7 +241,7 @@ export class GridAnimator {
     this.zoomContainer.style.transition = `transform ${this.timing.zoomOut}ms ease-in-out`;
 
     // Zoom back to centered overview scale
-    this.applyZoomTransform(this.zoomScale.min, 0, 0);
+    this.applyZoomTransform(0, 0, this.zoomScale.min);
 
     // Start glyph changes immediately during zoom out
     this.scheduleIndividualCellChanges(this.timing.zoomOut - 500);
@@ -292,11 +296,28 @@ export class GridAnimator {
    * @param {number} targetX - Target X offset from center
    * @param {number} targetY - Target Y offset from center
    */
-  applyZoomTransform(scale, targetX, targetY) {
+  applyZoomTransform(targetX, targetY, scale, targetElement = null) {
     // targetX/targetY are offsets from viewport center.
     // With center-origin scaling, translate must counter the scaled offset.
-    const translateX = -(targetX * scale);
-    const translateY = -(targetY * scale);
+    const baseTranslateX = -(targetX * scale);
+    const baseTranslateY = -(targetY * scale);
+
+    let translateX = baseTranslateX;
+    let translateY = baseTranslateY;
+
+    // Measurement-based correction for exact visual centering of the chosen cell.
+    if (targetElement) {
+      const rect = targetElement.getBoundingClientRect();
+      const { width, height } = this.getViewportDimensions();
+      const targetCenterX = rect.left + (rect.width / 2);
+      const targetCenterY = rect.top + (rect.height / 2);
+
+      const deltaX = (width / 2) - targetCenterX;
+      const deltaY = (height / 2) - targetCenterY;
+
+      translateX += deltaX;
+      translateY += deltaY;
+    }
 
     this.zoomContainer.style.transform =
       `translate(${translateX}px, ${translateY}px) scale(${scale})`;
