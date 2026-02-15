@@ -22,9 +22,9 @@ export class GridAnimator {
     // Timing (in milliseconds)
     this.timing = {
       zoomIn: 6000,    // 6 seconds
-      dwell: 2000,     // 2 seconds
+      dwell: 1000,     // 1 seconds
       zoomOut: 6000,   // 6 seconds
-      dwellOut: 2000   // Reserved for loop mode
+      dwellOut: 1000   // Reserved for loop mode
     };
 
     // Zoom parameters
@@ -49,10 +49,19 @@ export class GridAnimator {
     // Glyph change timers
     this.glyphChangeTimers = [];
 
-    // Glyph change settings (random range per cell, inclusive)
+    // Glyph change settings by phase (random range per cell, inclusive)
     this.glyphChangeSettings = {
-      minPerCell: 12,
-      maxPerCell: 30
+      zoom: {
+        minPerCell: 4,
+        maxPerCell: 10,
+        middleBias: 0.05
+      },
+      dwellOut: {
+        enabled: true,
+        minPerCell: 0,
+        maxPerCell: 1,
+        middleBias: 0
+      }
     };
 
     // State transition timers
@@ -260,6 +269,10 @@ export class GridAnimator {
         this.currentTarget = { x: 0, y: 0 };
 
         if (this.loopEnabled) {
+          if (this.glyphChangeSettings.dwellOut.enabled) {
+            this.scheduleIndividualCellChanges(this.timing.dwellOut, this.glyphChangeSettings.dwellOut);
+          }
+
           const dwellOutTimer = setTimeout(() => {
             if (!this.isPaused) {
               this.scheduleNextCycle();
@@ -333,15 +346,17 @@ export class GridAnimator {
   /**
    * Generate a random time weighted toward the middle using a bell curve
    * @param {number} duration - Total duration in ms
+   * @param {number} middleBias - Bias toward middle (0 to 1)
    * @returns {number} Random time between 0 and duration, weighted to center
    */
-  randomTimeWeightedToMiddle(duration) {
-    // Use sum of 3 random numbers to approximate normal distribution (central limit theorem)
-    // This creates a bell curve centered at 0.5
-    const r1 = Math.random();
-    const r2 = Math.random();
-    const r3 = Math.random();
-    const weightedRandom = (r1 + r2 + r3) / 3;
+  randomTimeWeightedToMiddle(duration, middleBias = 0.1) {
+    const bellCurveRandom = (Math.random() + Math.random() + Math.random()) / 3;
+    const uniformRandom = Math.random();
+
+    // Blend bell-curve with uniform random to control middle clustering.
+    // 0 = fully uniform, 1 = strongly middle-weighted.
+    const bias = Math.min(1, Math.max(0, middleBias));
+    const weightedRandom = (bellCurveRandom * bias) + (uniformRandom * (1 - bias));
 
     return weightedRandom * duration;
   }
@@ -349,15 +364,19 @@ export class GridAnimator {
   /**
    * Schedule individual cell changes at random times, weighted toward middle
    * @param {number} duration - Phase duration in ms
+   * @param {Object} settings - Per-phase glyph change settings
    */
-  scheduleIndividualCellChanges(duration) {
+  scheduleIndividualCellChanges(duration, settings = this.glyphChangeSettings.zoom) {
     this.clearGlyphChangeTimers();
+
+    if (duration <= 0) return;
 
     const cellCount = this.glyphGrid.getCellCount();
     if (cellCount === 0) return;
 
-    const minChanges = this.glyphChangeSettings.minPerCell;
-    const maxChanges = this.glyphChangeSettings.maxPerCell;
+    const minChanges = Math.max(0, Math.floor(settings.minPerCell ?? 0));
+    const maxChanges = Math.max(minChanges, Math.floor(settings.maxPerCell ?? minChanges));
+    const middleBias = settings.middleBias ?? 0.1;
 
     // Each cell gets random number of changes (inclusive range)
     for (let cellIndex = 0; cellIndex < cellCount; cellIndex++) {
@@ -365,7 +384,7 @@ export class GridAnimator {
 
       // Generate random times for each change, weighted toward middle
       for (let changeNum = 0; changeNum < changesForThisCell; changeNum++) {
-        const delay = this.randomTimeWeightedToMiddle(duration);
+        const delay = this.randomTimeWeightedToMiddle(duration, middleBias);
 
         const timer = setTimeout(() => {
           if (!this.isPaused) {
