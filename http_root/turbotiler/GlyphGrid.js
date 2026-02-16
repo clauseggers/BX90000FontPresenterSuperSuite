@@ -17,6 +17,7 @@ export class GlyphGrid {
     this.zoomOutScale = 1;
     this.containerWidth = 0;
     this.containerHeight = 0;
+    this.axisSamplers = [];
   }
 
   /**
@@ -37,6 +38,7 @@ export class GlyphGrid {
     this.font = font;
     this.container = container;
     this.zoomOutScale = zoomOutScale;
+    this.axisSamplers = this.createAxisSamplers();
 
     // Calculate aspect ratio based on font metrics
     this.cellAspectRatio = this.calculateFontAspectRatio(font);
@@ -94,6 +96,14 @@ export class GlyphGrid {
 
     console.log(`Created ${cellCount} grid cells (${this.gridCols} × ${this.gridRows})`);
     console.log(`Font aspect ratio (width:height): ${this.cellAspectRatio.toFixed(3)}`);
+
+    const nonLinearAxisTags = this.axisSamplers
+      .filter(sampler => sampler.hasNonLinearAvar)
+      .map(sampler => sampler.tag);
+
+    if (nonLinearAxisTags.length > 0) {
+      console.log('Detected non-linear avar axes:', nonLinearAxisTags);
+    }
   }
 
   /**
@@ -187,12 +197,123 @@ export class GlyphGrid {
     if (this.axes.length === 0) return '';
 
     const settings = this.axes.map(axis => {
-      // Generate random value within axis range
-      const value = axis.minValue + Math.random() * (axis.maxValue - axis.minValue);
+      const value = this.sampleAxisValue(axis);
       return `"${axis.tag}" ${value.toFixed(2)}`;
     });
 
     return settings.join(', ');
+  }
+
+  /**
+   * Build sampling metadata for each variation axis.
+   * Uses avar segment maps (if present) to detect and correct non-linear axes.
+   * @returns {Array<Object>} Sampler metadata aligned with this.axes order
+   */
+  createAxisSamplers() {
+    if (!this.font?.tables?.fvar?.axes || this.axes.length === 0) {
+      return [];
+    }
+
+    const axisOrder = this.font.tables.fvar.axes;
+    const avarMaps = this.font.tables.avar?.axisSegmentMaps || [];
+    const epsilon = 1e-6;
+
+    return this.axes.map(axis => {
+      const axisIndex = axisOrder.findIndex(fontAxis => fontAxis.tag === axis.tag);
+      const segmentMap = axisIndex >= 0 ? avarMaps[axisIndex] : null;
+      const pairs = (segmentMap?.axisValueMaps || [])
+        .map(pair => ({
+          fromCoordinate: pair.fromCoordinate,
+          toCoordinate: pair.toCoordinate
+        }))
+        .sort((left, right) => left.fromCoordinate - right.fromCoordinate);
+
+      const hasNonLinearAvar = pairs.some(pair => Math.abs(pair.toCoordinate - pair.fromCoordinate) > epsilon);
+
+      return {
+        tag: axis.tag,
+        hasNonLinearAvar,
+        avarPairs: pairs
+      };
+    });
+  }
+
+  /**
+   * Sample a value for a variation axis.
+   * For non-linear avar axes, sampling is uniform in warped normalized space,
+   * then inverted back to user coordinates to avoid visual oversampling.
+   * @param {Object} axis - Axis descriptor
+   * @returns {number} Axis value in user coordinates
+   */
+  sampleAxisValue(axis) {
+    const sampler = this.axisSamplers.find(item => item.tag === axis.tag);
+
+    if (!sampler?.hasNonLinearAvar || sampler.avarPairs.length < 2) {
+      return axis.minValue + Math.random() * (axis.maxValue - axis.minValue);
+    }
+
+    const warpedNormalizedTarget = -1 + (Math.random() * 2);
+    const rawNormalized = this.invertAvar(sampler.avarPairs, warpedNormalizedTarget);
+    return this.normalizedToAxisValue(rawNormalized, axis);
+  }
+
+  /**
+   * Invert an avar segment map.
+   * @param {Array<Object>} pairs - Sorted {fromCoordinate,toCoordinate} pairs
+   * @param {number} targetToCoordinate - Target warped normalized coordinate
+   * @returns {number} Raw normalized coordinate (pre-avar)
+   */
+  invertAvar(pairs, targetToCoordinate) {
+    if (!pairs || pairs.length < 2) {
+      return Math.max(-1, Math.min(1, targetToCoordinate));
+    }
+
+    const clampedTarget = Math.max(-1, Math.min(1, targetToCoordinate));
+
+    // Identify interval by output (toCoordinate) and linearly invert it.
+    for (let i = 1; i < pairs.length; i++) {
+      const prev = pairs[i - 1];
+      const current = pairs[i];
+      const minTo = Math.min(prev.toCoordinate, current.toCoordinate);
+      const maxTo = Math.max(prev.toCoordinate, current.toCoordinate);
+
+      if (clampedTarget < minTo || clampedTarget > maxTo) {
+        continue;
+      }
+
+      const outputDelta = current.toCoordinate - prev.toCoordinate;
+      if (Math.abs(outputDelta) < 1e-9) {
+        return prev.fromCoordinate;
+      }
+
+      const ratio = (clampedTarget - prev.toCoordinate) / outputDelta;
+      const fromValue = prev.fromCoordinate + ratio * (current.fromCoordinate - prev.fromCoordinate);
+      return Math.max(-1, Math.min(1, fromValue));
+    }
+
+    // Fallback for edge cases: clamp to nearest endpoint by output distance.
+    const first = pairs[0];
+    const last = pairs[pairs.length - 1];
+    const nearest = Math.abs(clampedTarget - first.toCoordinate) <= Math.abs(clampedTarget - last.toCoordinate)
+      ? first
+      : last;
+    return Math.max(-1, Math.min(1, nearest.fromCoordinate));
+  }
+
+  /**
+   * Convert normalized axis coordinate (-1..1 around default) back to user value.
+   * @param {number} normalizedValue - Normalized coordinate
+   * @param {Object} axis - Axis descriptor
+   * @returns {number} Axis coordinate in user space
+   */
+  normalizedToAxisValue(normalizedValue, axis) {
+    const clamped = Math.max(-1, Math.min(1, normalizedValue));
+
+    if (clamped < 0) {
+      return axis.defaultValue + clamped * (axis.defaultValue - axis.minValue);
+    }
+
+    return axis.defaultValue + clamped * (axis.maxValue - axis.defaultValue);
   }
 
   /**
