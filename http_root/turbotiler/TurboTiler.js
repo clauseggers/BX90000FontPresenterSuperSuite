@@ -56,13 +56,9 @@ class TurboTiler {
     // Background/colour swap toggle
     const backgroundToggle = document.getElementById('background-toggle');
     if (backgroundToggle) {
-      backgroundToggle.addEventListener('click', () => {
+      backgroundToggle.addEventListener('click', (event) => {
+        event.preventDefault();
         this.uiControls.toggleColorScheme();
-
-        // Rebuild layout after colour variable changes to avoid stale clipped state.
-        if (this.fontLoader.currentFont) {
-          this.rebuildForViewportChange();
-        }
       });
     }
 
