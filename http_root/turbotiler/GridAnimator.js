@@ -54,6 +54,7 @@ export class GridAnimator {
     // Central glyph change scheduler (5 Hz batched updates)
     this.glyphChangeTimerId = null;
     this.glyphChangeBatchIntervalMs = 50;
+    this.maxCellUpdatesPerTick = 12;
     this.glyphChangeBatches = [];
     this.glyphChangeTickIndex = 0;
     this.glyphChangeTotalTicks = 0;
@@ -414,13 +415,25 @@ export class GridAnimator {
 
     if (!this.isPaused && batch.length > 0) {
       // De-duplicate per tick so each cell updates at most once every 200ms.
-      const uniqueCellIndices = new Set(batch);
-      uniqueCellIndices.forEach((cellIndex) => {
+      const uniqueCellIndices = Array.from(new Set(batch));
+      const tickUpdateCount = Math.min(this.maxCellUpdatesPerTick, uniqueCellIndices.length);
+
+      for (let i = 0; i < tickUpdateCount; i++) {
+        const cellIndex = uniqueCellIndices[i];
         const cell = this.glyphGrid.cells[cellIndex];
         if (cell) {
           this.glyphGrid.updateCell(cell);
         }
-      });
+      }
+
+      // Carry overflow to the next tick to smooth per-frame layout work.
+      if (uniqueCellIndices.length > tickUpdateCount) {
+        const overflow = uniqueCellIndices.slice(tickUpdateCount);
+        const nextTickIndex = this.glyphChangeTickIndex + 1;
+        if (nextTickIndex < this.glyphChangeTotalTicks) {
+          this.glyphChangeBatches[nextTickIndex].push(...overflow);
+        }
+      }
     }
 
     this.glyphChangeTickIndex += 1;
