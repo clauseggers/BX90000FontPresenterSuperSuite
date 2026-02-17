@@ -51,8 +51,12 @@ export class GridAnimator {
     this.animationFrameId = null;
     this.stateStartTime = 0;
 
-    // Glyph change timers
-    this.glyphChangeTimers = [];
+    // Central glyph change scheduler (5 Hz batched updates)
+    this.glyphChangeTimerId = null;
+    this.glyphChangeBatchIntervalMs = 50;
+    this.glyphChangeBatches = [];
+    this.glyphChangeTickIndex = 0;
+    this.glyphChangeTotalTicks = 0;
 
     // Glyph change settings by phase (random range per cell, inclusive)
     this.glyphChangeSettings = {
@@ -369,6 +373,8 @@ export class GridAnimator {
     const minChanges = Math.max(0, Math.floor(settings.minPerCell ?? 0));
     const maxChanges = Math.max(minChanges, Math.floor(settings.maxPerCell ?? minChanges));
     const middleBias = settings.middleBias ?? 0.1;
+    const totalTicks = Math.max(1, Math.ceil(duration / this.glyphChangeBatchIntervalMs));
+    const batches = Array.from({ length: totalTicks }, () => []);
 
     // Each cell gets random number of changes (inclusive range)
     for (let cellIndex = 0; cellIndex < cellCount; cellIndex++) {
@@ -377,18 +383,50 @@ export class GridAnimator {
       // Generate random times for each change, weighted toward middle
       for (let changeNum = 0; changeNum < changesForThisCell; changeNum++) {
         const delay = this.randomTimeWeightedToMiddle(duration, middleBias);
-
-        const timer = setTimeout(() => {
-          if (!this.isPaused) {
-            const cell = this.glyphGrid.cells[cellIndex];
-            if (cell) {
-              this.glyphGrid.updateCell(cell);
-            }
-          }
-        }, delay);
-
-        this.glyphChangeTimers.push(timer);
+        const tickIndex = Math.min(totalTicks - 1, Math.floor(delay / this.glyphChangeBatchIntervalMs));
+        batches[tickIndex].push(cellIndex);
       }
+    }
+
+    this.glyphChangeBatches = batches;
+    this.glyphChangeTickIndex = 0;
+    this.glyphChangeTotalTicks = totalTicks;
+
+    // Run the first batch immediately, then continue at 5 Hz.
+    this.processGlyphChangeBatchTick();
+    if (this.glyphChangeTickIndex < this.glyphChangeTotalTicks) {
+      this.glyphChangeTimerId = setInterval(() => {
+        this.processGlyphChangeBatchTick();
+      }, this.glyphChangeBatchIntervalMs);
+    }
+  }
+
+  /**
+   * Process one scheduled glyph-change batch tick
+   */
+  processGlyphChangeBatchTick() {
+    if (this.glyphChangeTickIndex >= this.glyphChangeTotalTicks) {
+      this.clearGlyphChangeTimers();
+      return;
+    }
+
+    const batch = this.glyphChangeBatches[this.glyphChangeTickIndex] || [];
+
+    if (!this.isPaused && batch.length > 0) {
+      // De-duplicate per tick so each cell updates at most once every 200ms.
+      const uniqueCellIndices = new Set(batch);
+      uniqueCellIndices.forEach((cellIndex) => {
+        const cell = this.glyphGrid.cells[cellIndex];
+        if (cell) {
+          this.glyphGrid.updateCell(cell);
+        }
+      });
+    }
+
+    this.glyphChangeTickIndex += 1;
+
+    if (this.glyphChangeTickIndex >= this.glyphChangeTotalTicks) {
+      this.clearGlyphChangeTimers();
     }
   }
 
@@ -396,8 +434,14 @@ export class GridAnimator {
    * Clear all pending glyph change timers
    */
   clearGlyphChangeTimers() {
-    this.glyphChangeTimers.forEach(timer => clearTimeout(timer));
-    this.glyphChangeTimers = [];
+    if (this.glyphChangeTimerId !== null) {
+      clearInterval(this.glyphChangeTimerId);
+      this.glyphChangeTimerId = null;
+    }
+
+    this.glyphChangeBatches = [];
+    this.glyphChangeTickIndex = 0;
+    this.glyphChangeTotalTicks = 0;
   }
 
   /**
