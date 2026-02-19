@@ -240,20 +240,30 @@ export class GlyphGrid {
 
   /**
    * Sample a value for a variation axis.
-   * For non-linear avar axes, sampling is uniform in warped normalized space,
-   * then inverted back to user coordinates to avoid visual oversampling.
+   * Optical size axes are sampled logarithmically to reflect perceptual scaling.
+   * Other non-linear avar axes are sampled uniformly in raw normalized space;
+   * CSS applies avar automatically, so no inversion is needed.
    * @param {Object} axis - Axis descriptor
    * @returns {number} Axis value in user coordinates
    */
   sampleAxisValue(axis) {
+    if (axis.tag === 'opsz') {
+      // Optical size is perceptually logarithmic — equal ratios feel equal,
+      // so sample in log space to avoid over-representing extremes.
+      const logMin = Math.log(axis.minValue);
+      const logMax = Math.log(axis.maxValue);
+      return Math.exp(logMin + Math.random() * (logMax - logMin));
+    }
+
     const sampler = this.axisSamplers.find(item => item.tag === axis.tag);
 
     if (!sampler?.hasNonLinearAvar || sampler.avarPairs.length < 2) {
       return axis.minValue + Math.random() * (axis.maxValue - axis.minValue);
     }
 
-    const warpedNormalizedTarget = -1 + (Math.random() * 2);
-    const rawNormalized = this.invertAvar(sampler.avarPairs, warpedNormalizedTarget);
+    // For other non-linear avar axes: sample uniformly in raw normalized space.
+    // CSS applies avar automatically, so don't pre-apply or invert it here.
+    const rawNormalized = -1 + Math.random() * 2;
     return this.normalizedToAxisValue(rawNormalized, axis);
   }
 
