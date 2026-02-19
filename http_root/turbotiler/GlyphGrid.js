@@ -27,8 +27,8 @@ export class GlyphGrid {
    * @param {Array} axes - Variable font axes (if any)
    * @param {Array} features - OpenType features (if any)
    * @param {string} fontFamily - The font family name to apply
-  * @param {Object} font - OpenType.js font object for metrics
-  * @param {number} zoomOutScale - Current zoomed-out container scale
+   * @param {Object} font - OpenType.js font object for metrics
+   * @param {number} zoomOutScale - Current zoomed-out container scale
    */
   populate(container, glyphList, axes, features, fontFamily, font, zoomOutScale = 1) {
     this.glyphList = glyphList;
@@ -53,8 +53,8 @@ export class GlyphGrid {
     this.viewportWidth = container.parentElement?.clientWidth || window.innerWidth;
     this.viewportHeight = container.parentElement?.clientHeight || window.innerHeight;
 
-    const cellWidthFactor = 0.3;
-    const cellHeightFactor = 0.7;
+    const cellWidthFactor = 0.5;
+    const cellHeightFactor = 0.6;
     const minCoverageFactor = 1.06; // slight overscan to avoid edge whitespace
     const overscanCells = 1;
     const minGridCols = 13;
@@ -323,7 +323,7 @@ export class GlyphGrid {
   randomizeFeatures() {
     if (this.features.length === 0) return '';
 
-    const randomizablePattern = /^(ss\d\d|cv\d\d|salt|aalt|case|ordn|frac|sinf|sups|subs|pnum|tnum|onum|lnum|zero)$/;
+    const randomizablePattern = /^(ss\d\d|cv\d\d|case|ordn|smcp|sinf|sups|subs|pnum|tnum|onum|lnum|zero)$/;
 
     // Only randomize discretionary features. Required shaping features must remain untouched.
     const randomizableFeatures = this.features.filter(feature => randomizablePattern.test(feature));
