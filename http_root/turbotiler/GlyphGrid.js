@@ -241,15 +241,17 @@ export class GlyphGrid {
   /**
    * Sample a value for a variation axis.
    * Optical size axes are sampled logarithmically to reflect perceptual scaling.
-   * Other non-linear avar axes are sampled uniformly in raw normalized space;
-   * CSS applies avar automatically, so no inversion is needed.
+   * Other non-linear avar axes are sampled uniformly in warped (output) space,
+   * then the avar curve is analysed to derive a compensating raw coordinate,
+   * giving each region of the axis equal visual representation.
    * @param {Object} axis - Axis descriptor
    * @returns {number} Axis value in user coordinates
    */
   sampleAxisValue(axis) {
+    /* Optical size is perceptually logarithmic: 5–10pt feels like the same
+      jump as 100–200pt. Sample in log space so small and large sizes appear
+      with equal visual frequency rather than clustering at either extreme. */
     if (axis.tag === 'opsz') {
-      // Optical size is perceptually logarithmic — equal ratios feel equal,
-      // so sample in log space to avoid over-representing extremes.
       const logMin = Math.log(axis.minValue);
       const logMax = Math.log(axis.maxValue);
       return Math.exp(logMin + Math.random() * (logMax - logMin));
@@ -261,8 +263,10 @@ export class GlyphGrid {
       return axis.minValue + Math.random() * (axis.maxValue - axis.minValue);
     }
 
-    // For other non-linear avar axes: sample uniformly in raw normalized space.
-    // CSS applies avar automatically, so don't pre-apply or invert it here.
+    // Non-linear avar axis: the avar curve compresses some regions of the axis
+    // in user space, causing naive uniform sampling to over-represent them.
+    // Instead, sample uniformly in raw normalized space (-1..1 pre-avar) so
+    // every region gets equal weight. CSS applies avar automatically on top.
     const rawNormalized = -1 + Math.random() * 2;
     return this.normalizedToAxisValue(rawNormalized, axis);
   }
@@ -333,16 +337,29 @@ export class GlyphGrid {
   randomizeFeatures() {
     if (this.features.length === 0) return '';
 
-    const randomizablePattern = /^(ss\d\d|cv\d\d|case|ordn|smcp|sinf|sups|subs|pnum|tnum|onum|lnum|zero)$/;
+    /* Per-feature probability of being enabled (0.0–1.0).
+      Features absent from this map fall back to DEFAULT_FEATURE_PROBABILITY.
+      Raise a value toward 1.0 to see it more often, lower toward 0.0 to suppress it. */
+    const FEATURE_BIAS = {
+      smcp: 0.1,
+      zero: 0.2,
+      ordn: 0.1,
+      case: 0.2,
+      sinf: 0.3,
+      sups: 0.2,
+      subs: 0.2,
+    };
+    const DEFAULT_FEATURE_PROBABILITY = 0.5;
 
     // Only randomize discretionary features. Required shaping features must remain untouched.
+    const randomizablePattern = /^(ss\d\d|cv\d\d|case|ordn|smcp|sinf|sups|subs|pnum|tnum|onum|lnum|zero)$/;
     const randomizableFeatures = this.features.filter(feature => randomizablePattern.test(feature));
-    if (randomizableFeatures.length === 0) {
-      return 'normal';
-    }
+
+    if (randomizableFeatures.length === 0) return 'normal';
 
     const settings = randomizableFeatures.map(feature => {
-      const enabled = Math.random() > 0.5 ? 1 : 0;
+      const probability = FEATURE_BIAS[feature] ?? DEFAULT_FEATURE_PROBABILITY;
+      const enabled = Math.random() < probability ? 1 : 0;
       return `"${feature}" ${enabled}`;
     });
 
