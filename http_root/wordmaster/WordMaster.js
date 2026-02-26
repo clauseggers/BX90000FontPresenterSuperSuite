@@ -196,7 +196,7 @@ class WordAnimator {
 
   async loadWordList() {
     try {
-      const response = await fetch('../word_lists/euro_words.txt');
+      const response = await fetch('word_lists/euro_words.txt');
       const text = await response.text();
       this.wordList = text.split('\n').filter(word => word.trim());
       this.processWordList();

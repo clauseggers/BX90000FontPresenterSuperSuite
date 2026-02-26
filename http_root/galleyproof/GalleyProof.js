@@ -245,7 +245,7 @@ class GalleyProof {
 
   async loadText() {
     try {
-      const response = await fetch('../word_lists/kongens_fald_html.txt');
+      const response = await fetch('word_lists/kongens_fald_html.txt');
       const htmlContent = await response.text();
 
       // Create text container if it doesn't exist
