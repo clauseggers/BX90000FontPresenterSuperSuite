@@ -232,7 +232,7 @@ p > semibold {
 
 #font-metrics-overlay > .legend {
   position: fixed;
-  padding-left: 14px;
+  right: 14px;
   color: var(--black);
 }
 
