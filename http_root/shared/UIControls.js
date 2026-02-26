@@ -63,13 +63,12 @@ export class UIControls {
 
   toggleColorScheme() {
     this.isDarkMode = !this.isDarkMode;
-    document.documentElement.style.setProperty(
-      '--white',
-      this.isDarkMode ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)'
-    );
-    document.documentElement.style.setProperty(
-      '--black',
-      this.isDarkMode ? 'rgb(255, 255, 255)' : 'rgb(0, 0, 0)'
-    );
+    document.documentElement.classList.toggle('dark');
+    document.documentElement.style.setProperty('--black', this.isDarkMode ? 'rgb(255, 255, 255)' : 'rgb(0, 0, 0)');
+    if (!this.isDarkMode) {
+      document.documentElement.style.setProperty('--white', 'rgb(255, 255, 255)');
+    }
+    window.refreshMouseColor();
   }
+
 }

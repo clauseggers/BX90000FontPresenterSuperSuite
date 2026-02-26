@@ -124,7 +124,9 @@ class FontViewer {
     // Background toggle
     const backgroundToggle = document.getElementById('background-toggle');
     if (backgroundToggle) {
-      backgroundToggle.addEventListener('click', () => this.uiControls.toggleColorScheme());
+      backgroundToggle.addEventListener('click', () => {
+        this.uiControls.toggleColorScheme();
+      });
     }
 
     // Keyboard controls
