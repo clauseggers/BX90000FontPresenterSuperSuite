@@ -45,23 +45,7 @@ class TurboTiler {
   }
 
   setupEventListeners() {
-    // Fullscreen button
-    const fullscreenButton = document.getElementById('fullscreen-button');
-    if (fullscreenButton) {
-      fullscreenButton.addEventListener('click', () => {
-        this.uiControls.toggleFullscreen();
-        fullscreenButton.textContent = this.uiControls.isFullscreen ? 'Windowed' : 'Fullscreen';
-      });
-    }
-
-    // Background/colour swap toggle
-    const backgroundToggle = document.getElementById('background-toggle');
-    if (backgroundToggle) {
-      backgroundToggle.addEventListener('click', (event) => {
-        event.preventDefault();
-        this.uiControls.toggleColorScheme();
-      });
-    }
+    this.uiControls.setupSharedButtons();
 
     // Keyboard controls
     document.addEventListener('keydown', this.handleKeyPress.bind(this));
@@ -82,10 +66,6 @@ class TurboTiler {
       case 'f':
         // Toggle fullscreen
         this.uiControls.toggleFullscreen();
-        const fullscreenButton = document.getElementById('fullscreen-button');
-        if (fullscreenButton) {
-          fullscreenButton.textContent = this.uiControls.isFullscreen ? 'Windowed' : 'Fullscreen';
-        }
         break;
 
       case ' ':

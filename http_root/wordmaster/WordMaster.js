@@ -141,31 +141,7 @@ class WordAnimator {
   }
 
   setupEventListeners() {
-    // Fullscreen button
-    const fullscreenButton = document.getElementById('fullscreen-button');
-    if (fullscreenButton) {
-      fullscreenButton.addEventListener('click', () => {
-        this.uiControls.toggleFullscreen();
-        fullscreenButton.textContent = document.fullscreenElement ? 'Windowed' : 'Fullscreen';
-      });
-    }
-
-    // Font info toggle
-    const fontInfoToggle = document.getElementById('font-info-toggle');
-    const fontInfo = document.getElementById('font-info');
-    fontInfoToggle?.addEventListener('click', () => {
-      if (!fontInfo) return;
-      const isVisible = fontInfo.style.display !== 'none';
-      fontInfo.style.display = isVisible ? 'none' : 'block';
-      if (fontInfoToggle) {
-        fontInfoToggle.textContent = isVisible ? 'Show font info' : 'Hide font info';
-      }
-    });
-
-    // Background toggle
-    document.getElementById('background-toggle')?.addEventListener('click', () => {
-      this.uiControls.toggleColorScheme();
-    });
+    this.uiControls.setupSharedButtons();
 
     // Keyboard controls
     document.addEventListener('keydown', this.handleKeyPress.bind(this));
@@ -187,10 +163,6 @@ class WordAnimator {
         break;
       case 'f':
         this.uiControls.toggleFullscreen();
-        const fullscreenButton = document.getElementById('fullscreen-button');
-        if (fullscreenButton) {
-          fullscreenButton.textContent = document.fullscreenElement ? 'Windowed' : 'Fullscreen';
-        }
         break;
     }
   }

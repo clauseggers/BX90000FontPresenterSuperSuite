@@ -56,14 +56,7 @@ class FontViewer {
   }
 
   setupEventListeners() {
-    // Fullscreen button
-    const fullscreenButton = document.getElementById('fullscreen-button');
-    if (fullscreenButton) {
-      fullscreenButton.addEventListener('click', () => {
-        this.uiControls.toggleFullscreen();
-        fullscreenButton.textContent = this.uiControls.isFullscreen ? 'Windowed' : 'Fullscreen';
-      });
-    }
+    this.uiControls.setupSharedButtons();
 
     // Add resize observer to handle window resizes and fullscreen changes
     const resizeObserver = new ResizeObserver(() => {
@@ -76,19 +69,6 @@ class FontViewer {
     const displayContainer = document.querySelector('.display-container');
     if (displayContainer) {
       resizeObserver.observe(displayContainer);
-    }
-
-    // Font info toggle
-    const fontInfoToggle = document.getElementById('font-info-toggle');
-    if (fontInfoToggle) {
-      fontInfoToggle.addEventListener('click', () => {
-        const fontInfo = document.getElementById('font-info');
-        if (!fontInfo) return;
-
-        const isVisible = fontInfo.style.display !== 'none';
-        fontInfo.style.display = isVisible ? 'none' : 'block';
-        fontInfoToggle.textContent = isVisible ? 'Show font info' : 'Hide font info';
-      });
     }
 
     // Glyph info toggle
@@ -120,12 +100,6 @@ class FontViewer {
     const metricsToggle = document.getElementById('metrics-toggle');
     if (metricsToggle) {
       metricsToggle.addEventListener('click', () => this.metricsOverlay.toggle());
-    }
-
-    // Background toggle
-    const backgroundToggle = document.getElementById('background-toggle');
-    if (backgroundToggle) {
-      backgroundToggle.addEventListener('click', () => this.uiControls.toggleColorScheme());
     }
 
     // Keyboard controls
