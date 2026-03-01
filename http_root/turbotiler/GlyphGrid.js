@@ -18,6 +18,7 @@ export class GlyphGrid {
     this.containerWidth = 0;
     this.containerHeight = 0;
     this.axisSamplers = [];
+    this.namedInstances = [];
   }
 
   /**
@@ -39,6 +40,11 @@ export class GlyphGrid {
     this.container = container;
     this.zoomOutScale = zoomOutScale;
     this.axisSamplers = this.createAxisSamplers();
+    this.namedInstances = this.extractNamedInstances(font);
+
+    if (this.namedInstances.length > 0) {
+      console.log(`Found ${this.namedInstances.length} named instances in font`);
+    }
 
     // Calculate aspect ratio based on font metrics
     this.cellAspectRatio = this.calculateFontAspectRatio(font);
@@ -190,10 +196,43 @@ export class GlyphGrid {
   }
 
   /**
-   * Generate random axis values
+   * Generate random axis values.
+   * If the font has named instances, picks one at random and uses its coordinates.
+   * Falls back to per-axis numerical randomisation for fonts without named instances.
    * @returns {string} CSS font-variation-settings string
    */
   randomizeAxes() {
+    if (this.axes.length === 0) return '';
+
+    if (this.namedInstances.length > 0) {
+      return this.randomizeAxesFromNamedInstances();
+    }
+
+    return this.randomizeAxesNumerically();
+  }
+
+  /**
+   * Pick a random named instance and build a font-variation-settings string from it.
+   * Any axes present in the font but absent from the instance fall back to their default value.
+   * @returns {string} CSS font-variation-settings string
+   */
+  randomizeAxesFromNamedInstances() {
+    const index = Math.floor(Math.random() * this.namedInstances.length);
+    const coordinates = this.namedInstances[index];
+
+    const settings = this.axes.map(axis => {
+      const value = coordinates[axis.tag] ?? axis.defaultValue;
+      return `"${axis.tag}" ${value.toFixed(2)}`;
+    });
+
+    return settings.join(', ');
+  }
+
+  /**
+   * Generate random axis values numerically (used when no named instances are present).
+   * @returns {string} CSS font-variation-settings string
+   */
+  randomizeAxesNumerically() {
     if (this.axes.length === 0) return '';
 
     const settings = this.axes.map(axis => {
@@ -444,5 +483,17 @@ export class GlyphGrid {
    */
   getCellCount() {
     return this.cells.length;
+  }
+
+  /**
+   * Extract named instances from the font's fvar table (if any).
+   * @param {Object} font - OpenType.js font object
+   * @returns {Array<Object>} Array of instance coordinate maps {tag: value}
+   */
+  extractNamedInstances(font) {
+    const instances = font?.tables?.fvar?.instances;
+    if (!instances || instances.length === 0) return [];
+
+    return instances.map(instance => instance.coordinates).filter(coords => coords != null);
   }
 }
