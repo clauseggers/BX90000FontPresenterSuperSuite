@@ -141,7 +141,7 @@ class WordAnimator {
 
   setupEventListeners() {
     // Fullscreen button
-    const fullscreenButton = document.querySelector('#fullScreen button');
+    const fullscreenButton = document.getElementById('fullscreen-button');
     if (fullscreenButton) {
       fullscreenButton.addEventListener('click', () => {
         this.uiControls.toggleFullscreen();
@@ -186,7 +186,7 @@ class WordAnimator {
         break;
       case 'f':
         this.uiControls.toggleFullscreen();
-        const fullscreenButton = document.querySelector('#fullScreen button');
+        const fullscreenButton = document.getElementById('fullscreen-button');
         if (fullscreenButton) {
           fullscreenButton.textContent = document.fullscreenElement ? 'Windowed' : 'Fullscreen';
         }

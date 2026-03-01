@@ -47,8 +47,9 @@ p > semibold {
 }
 
 #fullScreen {
-  float: right;
-  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 5px;
   position: fixed;
   top: 14px;
   right: 14px;
@@ -56,8 +57,28 @@ p > semibold {
 }
 
 .buttons-container {
-  margin-left: 139px;
-  margin-right: 77px;
+  margin-top: 7px;
+  margin-bottom: 7px;
+  padding-left: 7px;
+  padding-right: 77px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.buttons-container > label {
+  color: var(--black);
+  font-size: 0.7rem;
+  min-width: 120px;
+  flex-shrink: 0;
+  padding-top: 4px;
+}
+
+.feature-buttons-wrapper {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
 }
 
 #fullScreen button,
@@ -85,12 +106,8 @@ p > semibold {
   transition: .2s;
 }
 
-.buttons-container button {
-  margin-right: 5px;
-}
-
-#fullScreen button {
-  width: 100%;
+.feature-buttons-wrapper button {
+  margin-right: 0;
 }
 
 #fullScreen button > span {

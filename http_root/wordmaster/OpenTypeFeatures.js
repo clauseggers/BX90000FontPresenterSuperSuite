@@ -191,8 +191,7 @@ class OpenTypeFeatures {
     const existingButtons = this.buttonsContainer.querySelectorAll('.feature-button');
     existingButtons.forEach(button => button.remove());
 
-    const backgroundToggle = this.buttonsContainer.querySelector('#background-toggle');
-    if (!backgroundToggle) return;
+    const wrapper = this.buttonsContainer.querySelector('.feature-buttons-wrapper') || this.buttonsContainer;
 
     this.availableFeatures.forEach(feature => {
       const button = document.createElement('button');
@@ -203,7 +202,7 @@ class OpenTypeFeatures {
         this.toggleFeature(feature, button);
       });
 
-      backgroundToggle.insertAdjacentElement('afterend', button);
+      wrapper.appendChild(button);
     });
   }
 
