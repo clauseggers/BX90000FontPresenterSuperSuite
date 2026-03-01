@@ -222,7 +222,7 @@ class WordAnimator {
     });
   }
 
-  handleFontLoaded({ font, fontInfo, fontFamily }) {
+  handleFontLoaded({ font, fontInfo, fontFamily, buffer }) {
     FontInfoRenderer.renderFontInfo(
       document.getElementById('font-info-content'),
       fontInfo
@@ -231,7 +231,7 @@ class WordAnimator {
     this.container.style.fontFamily = `"${fontFamily}"`;
 
     this.openTypeFeatures.clear();
-    this.openTypeFeatures.extractFeatures(fontInfo);
+    this.openTypeFeatures.extractFeatures(fontInfo, font, buffer);
     this.openTypeFeatures.createButtons();
 
     if (fontInfo.axes) {

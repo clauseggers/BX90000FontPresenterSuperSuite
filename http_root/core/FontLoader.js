@@ -46,8 +46,8 @@ export class FontLoader {
 
       console.log('Font info generated:', fontInfo);
 
-      this.callbacks.onFontLoaded?.({ font, fontInfo, fontFamily: uniqueFontName });
-      return { font, fontInfo, fontFamily: uniqueFontName };
+      this.callbacks.onFontLoaded?.({ font, fontInfo, fontFamily: uniqueFontName, buffer });
+      return { font, fontInfo, fontFamily: uniqueFontName, buffer };
 
     } catch (error) {
       console.error('Error loading font:', error);
