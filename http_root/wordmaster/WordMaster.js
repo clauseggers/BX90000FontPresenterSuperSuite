@@ -4,8 +4,8 @@
 
 import { FontLoader } from '../core/FontLoader.js';
 import { FontInfoRenderer } from '../core/FontInfo.js';
-import { MetricsOverlay } from '../hyperflip/MetricsOverlay.js';
-import { VariationAxes } from '../hyperflip/VariationAxes.js';
+import { MetricsOverlay } from '../shared/MetricsOverlay.js';
+import { VariationAxes } from '../shared/VariationAxes.js';
 import { UIControls } from '../shared/UIControls.js';
 import { DragAndDrop } from '../shared/DragAndDrop.js';
 import { TextFitter } from './TextFitter.js';
@@ -235,7 +235,7 @@ class WordAnimator {
     this.openTypeFeatures.createButtons();
 
     if (fontInfo.axes) {
-      this.variationAxes.createAxesControls(fontInfo.axes);
+      this.variationAxes.createAxesControls(fontInfo.axes, fontInfo.instances || []);
     }
 
     this.start();

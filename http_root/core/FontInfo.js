@@ -166,8 +166,9 @@ export function getFontInformation(font, filename) {
     fontStyle: extractFontStyle(font),
     features: extractOpenTypeFeatures(font),
 
-    // Variable font axes
-    axes: extractVariableAxes(font)
+    // Variable font axes and named instances
+    axes: extractVariableAxes(font),
+    instances: extractVariableInstances(font)
   };
 
 // Before returning the info object
@@ -301,6 +302,29 @@ function extractOpenTypeFeatures(font) {
     });
   }
   return features;
+}
+
+function extractVariableInstances(font) {
+  if (!font.tables.fvar || !font.tables.fvar.instances) return [];
+  return font.tables.fvar.instances
+    .filter(inst => inst.name)
+    .map(inst => {
+      // inst.name is a language-keyed object like { en: "Bold" }, extract the string
+      let name = inst.name;
+      if (typeof name === 'object' && name !== null) {
+        const langCodes = ['en', 'en-US', 'en-GB', 'und'];
+        for (const code of langCodes) {
+          if (name[code]) { name = name[code]; break; }
+        }
+        if (typeof name === 'object') {
+          const keys = Object.keys(name);
+          name = keys.length > 0 ? name[keys[0]] : null;
+        }
+      }
+      if (!name) return null;
+      return { name, coordinates: inst.coordinates };
+    })
+    .filter(Boolean);
 }
 
 function extractVariableAxes(font) {

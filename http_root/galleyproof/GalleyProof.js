@@ -7,7 +7,7 @@ import { FontLoader } from '../core/FontLoader.js';
 import { UIControls } from '../shared/UIControls.js';
 import { FontInfoRenderer } from '../core/FontInfo.js';
 import { OpenTypeFeatures } from '../wordmaster/OpenTypeFeatures.js';
-import { VariationAxes } from '../hyperflip/VariationAxes.js';
+import { VariationAxes } from '../shared/VariationAxes.js';
 
 class GalleyProof {
   constructor() {

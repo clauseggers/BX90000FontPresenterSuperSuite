@@ -281,6 +281,28 @@ p > semibold {
   text-align: right;
 }
 
+.instances-select {
+  flex: 1;
+  margin-right: 70px;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 23px;
+  padding-left: 8px;
+  padding-right: 8px;
+  font-size: 0.7rem;
+  font-family: var(--system-ui);
+  background: transparent;
+  color: var(--black);
+  border: 1px solid var(--black);
+  border-radius: 5px;
+  cursor: pointer;
+  outline: none;
+}
+
+.instances-select:focus {
+  outline: none;
+}
+
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;

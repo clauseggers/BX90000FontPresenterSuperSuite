@@ -5,8 +5,8 @@
 import { FontLoader } from '../core/FontLoader.js';
 import { FontInfoRenderer } from '../core/FontInfo.js';
 import { GlyphAnimator } from './GlyphAnimator.js';
-import { MetricsOverlay } from './MetricsOverlay.js';
-import { VariationAxes } from './VariationAxes.js';
+import { MetricsOverlay } from '../shared/MetricsOverlay.js';
+import { VariationAxes } from '../shared/VariationAxes.js';
 import { UIControls } from '../shared/UIControls.js';
 import { DragAndDrop } from '../shared/DragAndDrop.js';
 

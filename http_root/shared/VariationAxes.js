@@ -1,5 +1,5 @@
 // =============================================================================
-// hyperflip/VariationAxes.js
+// shared/VariationAxes.js
 // =============================================================================
 
 export class VariationAxes {
@@ -7,6 +7,7 @@ export class VariationAxes {
     this.container = options.container;
     this.onChange = options.onChange;
     this.currentSettings = {};
+    this.sliderMap = {};
     // Create a specific container for axis controls
     this.axisContainer = document.createElement('div');
     this.axisContainer.className = 'axis-controls';
@@ -14,13 +15,56 @@ export class VariationAxes {
   }
 
   /**
-   * Creates sliders for variable font axes
+   * Creates sliders for variable font axes, and a named instances dropdown if provided
    * @param {Array<AxisDefinition>} axes - Array of axis definitions
+   * @param {Array} instances - Array of named instances (optional)
    */
-  createAxesControls(axes) {
+  createAxesControls(axes, instances = []) {
     // Clear only the axis container, not the entire controls div
     this.axisContainer.innerHTML = '';
     this.currentSettings = {};
+    this.sliderMap = {};
+
+    // Remove any previously inserted instances row
+    const existingInstancesRow = this.container.querySelector('.instances-container');
+    if (existingInstancesRow) existingInstancesRow.remove();
+
+    // Named instances dropdown (only if instances exist)
+    if (instances.length > 0) {
+      const instancesRow = document.createElement('div');
+      instancesRow.className = 'slider-container instances-container';
+
+      const label = document.createElement('label');
+      label.textContent = 'Named instances';
+
+      const select = document.createElement('select');
+      select.className = 'instances-select';
+
+      instances.forEach((inst, i) => {
+        const option = document.createElement('option');
+        option.value = i;
+        option.textContent = inst.name;
+        select.appendChild(option);
+      });
+
+      select.addEventListener('change', (e) => {
+        const idx = parseInt(e.target.value);
+        if (!isNaN(idx)) {
+          this.setAxesValues(instances[idx].coordinates);
+        }
+      });
+
+      instancesRow.appendChild(label);
+      instancesRow.appendChild(select);
+
+      // Insert before the first existing slider-container so it appears above all sliders
+      const firstSlider = this.container.querySelector('.slider-container');
+      if (firstSlider) {
+        this.container.insertBefore(instancesRow, firstSlider);
+      } else {
+        this.container.insertBefore(instancesRow, this.axisContainer);
+      }
+    }
 
     axes.forEach(axis => {
       const container = document.createElement('div');
@@ -45,11 +89,29 @@ export class VariationAxes {
         value.textContent = parseFloat(e.target.value).toFixed(1);
       });
 
+      this.sliderMap[axis.tag] = { slider, valueSpan: value };
+
       container.appendChild(label);
       container.appendChild(slider);
       container.appendChild(value);
       this.axisContainer.appendChild(container);
     });
+  }
+
+  /**
+   * Sets all axis sliders to the given coordinate values and triggers onChange
+   * @param {Object} coordinates - Map of axis tag to value
+   */
+  setAxesValues(coordinates) {
+    Object.entries(coordinates).forEach(([tag, val]) => {
+      this.currentSettings[tag] = val;
+      const entry = this.sliderMap[tag];
+      if (entry) {
+        entry.slider.value = val;
+        entry.valueSpan.textContent = parseFloat(val).toFixed(1);
+      }
+    });
+    this.updateVariationSettings();
   }
 
   /**
