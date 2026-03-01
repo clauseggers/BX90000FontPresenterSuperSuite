@@ -33,17 +33,32 @@ p > semibold {
   font-family: var(--system-mono);
 }
 
-#index_link > a {
-  font-weight: 600;
+#index_link > a,
+#index_link > a:link,
+#index_link > a:visited {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.7rem;
+  font-weight: 400;
+  cursor: pointer;
+  height: 23px;
+  padding-left: 8px;
+  padding-right: 8px;
+  background: transparent;
   color: var(--black);
-}
-
-#index_link > a:link {
+  border: 1px solid var(--black);
+  border-radius: 5px;
   text-decoration: none;
+  -webkit-transition: .2s;
+  transition: .2s;
 }
 
 #index_link {
-  margin-bottom: 28px;
+  margin-bottom: 14px;
+}
+
+#index_link > p {
+  margin-top: 5px;
 }
 
 #fullScreen {
