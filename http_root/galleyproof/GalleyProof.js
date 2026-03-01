@@ -8,6 +8,7 @@ import { UIControls } from '../shared/UIControls.js';
 import { FontInfoRenderer } from '../core/FontInfo.js';
 import { OpenTypeFeatures } from '../wordmaster/OpenTypeFeatures.js';
 import { VariationAxes } from '../shared/VariationAxes.js';
+import { initAppNav } from '../shared/AppNav.js';
 
 class GalleyProof {
   constructor() {
@@ -43,8 +44,8 @@ class GalleyProof {
     this.variationAxes = new VariationAxes({
       container: document.getElementById('controls'),
       onChange: (settings) => {
+        this.currentVariationSettings = settings;
         if (this.container.firstChild) {
-          this.currentVariationSettings = settings;
           this.container.firstChild.style.fontVariationSettings = settings;
         }
       }
@@ -206,7 +207,7 @@ class GalleyProof {
 
   setupEventListeners() {
     // Fullscreen button
-    const fullscreenButton = document.querySelector('#fullScreen button');
+    const fullscreenButton = document.getElementById('fullscreen-button');
     if (fullscreenButton) {
       fullscreenButton.addEventListener('click', () => {
         this.uiControls.toggleFullscreen();
@@ -235,7 +236,7 @@ class GalleyProof {
     document.addEventListener('keydown', (event) => {
       if (event.key === 'f') {
         this.uiControls.toggleFullscreen();
-        const fullscreenButton = document.querySelector('#fullScreen button');
+        const fullscreenButton = document.getElementById('fullscreen-button');
         if (fullscreenButton) {
           fullscreenButton.textContent = document.fullscreenElement ? 'Windowed' : 'Fullscreen';
         }
@@ -276,6 +277,7 @@ class GalleyProof {
       if (textElement) {
         textElement.style.fontFamily = `"${fontFamily}"`;
         textElement.style.fontFeatureSettings = 'normal';
+        textElement.style.fontVariationSettings = this.currentVariationSettings;
 
         // Reset spacing properties to default values
         textElement.style.letterSpacing = '0em';
@@ -319,7 +321,7 @@ class GalleyProof {
     this.openTypeFeatures.createButtons();
 
     if (fontInfo.axes) {
-      this.variationAxes.createAxesControls(fontInfo.axes);
+      this.variationAxes.createAxesControls(fontInfo.axes, fontInfo.instances || []);
     }
   }
 
@@ -332,7 +334,9 @@ class GalleyProof {
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', () => {
-  new GalleyProof();
+  const app = new GalleyProof();
+  initAppNav();
+  app.fontLoader.restoreFromSession();
 });
 
 export { GalleyProof };

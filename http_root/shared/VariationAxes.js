@@ -2,6 +2,8 @@
 // shared/VariationAxes.js
 // =============================================================================
 
+import { saveInstanceIndex, getSavedInstanceIndex } from './FontSession.js';
+
 export class VariationAxes {
   constructor(options) {
     this.container = options.container;
@@ -50,6 +52,7 @@ export class VariationAxes {
       select.addEventListener('change', (e) => {
         const idx = parseInt(e.target.value);
         if (!isNaN(idx)) {
+          saveInstanceIndex(idx);
           this.setAxesValues(instances[idx].coordinates);
         }
       });
@@ -64,6 +67,12 @@ export class VariationAxes {
       } else {
         this.container.insertBefore(instancesRow, this.axisContainer);
       }
+
+      this._instanceSelect = select;
+      this._instances = instances;
+    } else {
+      this._instanceSelect = null;
+      this._instances = [];
     }
 
     axes.forEach(axis => {
@@ -89,6 +98,9 @@ export class VariationAxes {
         value.textContent = parseFloat(e.target.value).toFixed(1);
       });
 
+      // Store axis default in currentSettings so initial values are emitted
+      this.currentSettings[axis.tag] = parseFloat(axis.default);
+
       this.sliderMap[axis.tag] = { slider, valueSpan: value };
 
       container.appendChild(label);
@@ -96,6 +108,19 @@ export class VariationAxes {
       container.appendChild(value);
       this.axisContainer.appendChild(container);
     });
+
+    // Restore saved instance after sliderMap is fully populated
+    if (this._instanceSelect && this._instances.length > 0) {
+      const savedIdx = getSavedInstanceIndex();
+      if (savedIdx !== null && savedIdx < this._instances.length) {
+        this._instanceSelect.value = savedIdx;
+        this.setAxesValues(this._instances[savedIdx].coordinates);
+        return; // setAxesValues already calls updateVariationSettings
+      }
+    }
+
+    // Emit initial variation settings from axis defaults
+    this.updateVariationSettings();
   }
 
   /**

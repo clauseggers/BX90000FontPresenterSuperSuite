@@ -19,7 +19,9 @@
 </head>
 <body>
   <div id="fullScreen">
-    <button>Fullscreen</button>
+    <button id="font-info-toggle">Show font info</button>
+    <button id="background-toggle">Swap colours</button>
+    <button id="fullscreen-button">Fullscreen</button>
   </div>
 
   <div id="drop-text">
@@ -31,16 +33,13 @@
     <div id="glyph-display" class="glyph-buffer"></div>
   </div>
 
-  <div id="font-info" style="display: none;">
-    <div id="font-info-content"></div>
+  <div id="info-panels">
+    <div id="font-info" style="display: none;">
+      <div id="font-info-content"></div>
+    </div>
   </div>
 
   <div id="controls">
-    <div class="buttons-container">
-      <button id="font-info-toggle">Show font info</button>
-      <button id="background-toggle">Swap colours</button>
-    </div>
-
     <div class="slider-container">
       <label>Font size</label>
       <input type="range" min="0.3" max="8" step="0.01" value="1">

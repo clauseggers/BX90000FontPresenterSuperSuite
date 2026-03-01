@@ -3,6 +3,7 @@
 // =============================================================================
 
 import { getFontInformation } from './FontInfo.js';
+import { saveFont, getSavedFont, saveInstanceIndex } from '../shared/FontSession.js';
 
 export class FontLoader {
   /**
@@ -22,7 +23,7 @@ export class FontLoader {
    * @param {string} filename - Original filename
    * @returns {Promise<Object>} Font information and loaded font
    */
-  async loadFont(buffer, filename) {
+  async loadFont(buffer, filename, { preserveInstance = false } = {}) {
     try {
       // Parse the font using OpenType.js
       const font = opentype.parse(buffer);
@@ -46,6 +47,8 @@ export class FontLoader {
 
       console.log('Font info generated:', fontInfo);
 
+      saveFont(buffer, filename);
+      if (!preserveInstance) saveInstanceIndex(null);
       this.callbacks.onFontLoaded?.({ font, fontInfo, fontFamily: uniqueFontName, buffer });
       return { font, fontInfo, fontFamily: uniqueFontName, buffer };
 
@@ -54,6 +57,18 @@ export class FontLoader {
       this.callbacks.onError?.(error);
       throw error;
     }
+  }
+
+  /**
+   * Restores the last used font from sessionStorage, if any.
+   * Call this on DOMContentLoaded to carry the font across page navigations.
+   */
+  async restoreFromSession() {
+    const saved = getSavedFont();
+    if (!saved) return;
+    const dropText = document.getElementById('drop-text');
+    if (dropText) dropText.remove();
+    await this.loadFont(saved.buffer, saved.filename, { preserveInstance: true });
   }
 
   /**

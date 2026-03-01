@@ -55,7 +55,7 @@ export class UIControls {
     );
 
     // Update button text if needed
-    const fullscreenButton = document.querySelector('#fullScreen button');
+    const fullscreenButton = document.getElementById('fullscreen-button');
     if (fullscreenButton) {
       fullscreenButton.textContent = this.isFullscreen ? 'Windowed' : 'Fullscreen';
     }

@@ -18,7 +18,12 @@
 </head>
 <body>
   <div id="fullScreen">
-    <button>Fullscreen</button>
+    <button id="randomize-button">Randomize glyph order</button>
+    <button id="metrics-toggle">Show metrics</button>
+    <button id="glyph-info-toggle">Show glyph info</button>
+    <button id="font-info-toggle">Show font info</button>
+    <button id="background-toggle">Swap colours</button>
+    <button id="fullscreen-button">Fullscreen</button>
   </div>
 
   <div id="drop-text">
@@ -29,12 +34,13 @@
     <div id="glyph-display" class="glyph-buffer"></div>
   </div>
 
-  <div id="font-info" style="display: none;">
-    <div id="font-info-content"></div>
-  </div>
-
-  <div id="glyph-info" class="glyph-info" style="display: none;">
-    <div id="glyph-info-content"></div>
+  <div id="info-panels">
+    <div id="glyph-info" style="display: none;">
+      <div id="glyph-info-content"></div>
+    </div>
+    <div id="font-info" style="display: none;">
+      <div id="font-info-content"></div>
+    </div>
   </div>
 
   <div class="metrics-container">
@@ -42,14 +48,6 @@
   </div>
 
   <div id="controls">
-    <div class="buttons-container">
-      <button id="font-info-toggle">Show font info</button>
-      <button id="glyph-info-toggle">Show glyph info</button>
-      <button id="metrics-toggle">Show metrics</button>
-      <button id="background-toggle">Swap colours</button>
-      <button id="randomize-button">Randomize glyph order</button>
-    </div>
-
     <div class="slider-container">
       <label>Font size</label>
       <input type="range" id="font-size" min="100" max="1000" value="600">

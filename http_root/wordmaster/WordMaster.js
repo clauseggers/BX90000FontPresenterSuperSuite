@@ -10,6 +10,7 @@ import { UIControls } from '../shared/UIControls.js';
 import { DragAndDrop } from '../shared/DragAndDrop.js';
 import { TextFitter } from './TextFitter.js';
 import { OpenTypeFeatures } from './OpenTypeFeatures.js';
+import { initAppNav } from '../shared/AppNav.js';
 
 class WordAnimator {
   constructor(options) {
@@ -64,8 +65,8 @@ class WordAnimator {
     this.variationAxes = new VariationAxes({
       container: document.getElementById('controls'),
       onChange: (settings) => {
+        this.currentVariationSettings = settings;
         if (this.container.firstChild) {
-          this.currentVariationSettings = settings;
           this.container.firstChild.style.fontVariationSettings = settings;
         }
       }
@@ -317,7 +318,9 @@ class WordAnimator {
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', () => {
-  new WordAnimator();
+  const app = new WordAnimator();
+  initAppNav();
+  app.fontLoader.restoreFromSession();
 });
 
 export { WordAnimator };

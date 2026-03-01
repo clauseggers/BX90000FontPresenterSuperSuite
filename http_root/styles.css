@@ -170,25 +170,26 @@ p > semibold {
   position: relative;
 }
 
+#info-panels {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+}
+
 #font-info {
-  top: 0px;
-  left: 0px;
   height: auto;
   width: 300px;
   margin: 0px;
   padding: 14px;
   background: var(--white);
-  position: fixed;
-  z-index: 10000;
 }
 
 #font-info-content {
-  float: left;
-  margin-right: auto;
   width: 300px;
   color: var(--black);
-  top: 14px;
-  left: 14px;
 }
 
 #font-info-content > p {
@@ -198,9 +199,12 @@ p > semibold {
 }
 
 #glyph-info {
-  position: fixed;
-  top: 14px;
-  right: 70px;
+  width: 300px;
+  /* padding: 14px; */
+  padding-top: 14px;
+  padding-left: 14px;
+  padding-right: 14px;
+  background: var(--white);
   color: var(--black);
 }
 
@@ -367,4 +371,46 @@ input[type="range"]:focus::-webkit-slider-thumb {
 
 input[type="range"]:focus::-moz-range-thumb {
   box-shadow: none;
+}
+
+/* App navigation ------------------------------------------------------------ */
+
+#appNav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  position: fixed;
+  top: 45px;
+  right: 14px;
+  z-index: 10000;
+  text-align: right;
+}
+
+#appNav a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size);
+  cursor: pointer;
+  height: 23px;
+  padding-left: 8px;
+  padding-right: 8px;
+  background: transparent;
+  color: var(--black);
+  border: 1px solid var(--black);
+  border-radius: 5px;
+  text-decoration: none;
+  opacity: 1;
+  -webkit-transition: .2s;
+  transition: .2s;
+}
+
+#appNav a:hover {
+  opacity: 0.6;
+}
+
+#appNav a.active {
+  opacity: 0.25;
+  cursor: default;
+  pointer-events: none;
 }

@@ -9,6 +9,7 @@ import { MetricsOverlay } from '../shared/MetricsOverlay.js';
 import { VariationAxes } from '../shared/VariationAxes.js';
 import { UIControls } from '../shared/UIControls.js';
 import { DragAndDrop } from '../shared/DragAndDrop.js';
+import { initAppNav } from '../shared/AppNav.js';
 
 class FontViewer {
   constructor() {
@@ -56,7 +57,7 @@ class FontViewer {
 
   setupEventListeners() {
     // Fullscreen button
-    const fullscreenButton = document.querySelector('#fullScreen button');
+    const fullscreenButton = document.getElementById('fullscreen-button');
     if (fullscreenButton) {
       fullscreenButton.addEventListener('click', () => {
         this.uiControls.toggleFullscreen();
@@ -207,7 +208,7 @@ class FontViewer {
 
     // Setup variable font axes
     if (fontInfo.axes?.length > 0) {
-      this.variationAxes.createAxesControls(fontInfo.axes);
+      this.variationAxes.createAxesControls(fontInfo.axes, fontInfo.instances || []);
     }
 
     // Start glyph animation with the correct font
@@ -282,7 +283,9 @@ class FontViewer {
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', () => {
-  new FontViewer();
+  const app = new FontViewer();
+  initAppNav();
+  app.fontLoader.restoreFromSession();
 });
 
 export default FontViewer;

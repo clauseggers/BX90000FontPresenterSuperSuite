@@ -7,7 +7,7 @@ import { UIControls } from './UIControls.js';
 const uiControls = new UIControls();
 
 // Fullscreen button handler
-const fullscreenButton = document.querySelector('#fullScreen button');
+const fullscreenButton = document.getElementById('fullscreen-button');
 fullscreenButton.addEventListener('click', () => {
     uiControls.toggleFullscreen();
 });

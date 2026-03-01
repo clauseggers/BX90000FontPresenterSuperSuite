@@ -9,6 +9,7 @@ import { UIControls } from '../shared/UIControls.js';
 import { DragAndDrop } from '../shared/DragAndDrop.js';
 import { GlyphGrid } from './GlyphGrid.js';
 import { GridAnimator } from './GridAnimator.js';
+import { initAppNav } from '../shared/AppNav.js';
 
 class TurboTiler {
   constructor() {
@@ -339,5 +340,7 @@ class TurboTiler {
 
 // Initialize on DOM load
 document.addEventListener('DOMContentLoaded', () => {
-  new TurboTiler();
+  const app = new TurboTiler();
+  initAppNav();
+  app.fontLoader.restoreFromSession();
 });
