@@ -47,18 +47,22 @@ class TurboTiler {
   setupEventListeners() {
     this.uiControls.setupSharedButtons();
 
+    // Save bound references for cleanup in destroy().
+    this._keyHandler    = this.handleKeyPress.bind(this);
+    this._resizeHandler = this.handleResize.bind(this);
+
     // Keyboard controls
-    document.addEventListener('keydown', this.handleKeyPress.bind(this));
+    document.addEventListener('keydown', this._keyHandler);
 
     // Window resize handler
-    window.addEventListener('resize', this.handleResize.bind(this));
+    window.addEventListener('resize', this._resizeHandler);
 
     // Fullscreen transitions do not always emit a reliable resize sequence.
     // Force the same relayout path on enter/exit fullscreen.
-    document.addEventListener('fullscreenchange', this.handleResize.bind(this));
-    document.addEventListener('webkitfullscreenchange', this.handleResize.bind(this));
-    document.addEventListener('mozfullscreenchange', this.handleResize.bind(this));
-    document.addEventListener('MSFullscreenChange', this.handleResize.bind(this));
+    document.addEventListener('fullscreenchange',       this._resizeHandler);
+    document.addEventListener('webkitfullscreenchange', this._resizeHandler);
+    document.addEventListener('mozfullscreenchange',    this._resizeHandler);
+    document.addEventListener('MSFullscreenChange',     this._resizeHandler);
   }
 
   handleKeyPress(event) {
@@ -316,11 +320,31 @@ class TurboTiler {
     // 0.19 gives near full-frame fill without bottom cropping on fullscreen.
     this.gridAnimator.zoomScale.min = 0.19;
   }
+
+  // Cancel all timers, stop animation, and remove document-level listeners.
+  destroy() {
+    if (this.resizeTimeouts) {
+      this.resizeTimeouts.forEach((id) => clearTimeout(id));
+      this.resizeTimeouts = null;
+    }
+    this.gridAnimator.pause();
+    this.gridAnimator.reset();
+    document.removeEventListener('keydown',             this._keyHandler);
+    window.removeEventListener('resize',                this._resizeHandler);
+    document.removeEventListener('fullscreenchange',       this._resizeHandler);
+    document.removeEventListener('webkitfullscreenchange', this._resizeHandler);
+    document.removeEventListener('mozfullscreenchange',    this._resizeHandler);
+    document.removeEventListener('MSFullscreenChange',     this._resizeHandler);
+    this.uiControls.destroy();
+    this.dragAndDrop.destroy();
+  }
 }
 
-// Initialize on DOM load
+// Standalone bootstrap (no-op in SPA mode — DOMContentLoaded won't fire).
 document.addEventListener('DOMContentLoaded', () => {
   const app = new TurboTiler();
   initAppNav();
   app.fontLoader.restoreFromSession();
 });
+
+export { TurboTiler };

@@ -249,6 +249,8 @@ p > semibold {
 #font-metrics-overlay {
   width: 100%;
   position: fixed;
+  left: 0;
+  top: 0;
 }
 
 #font-metrics-overlay > .metric-line,
@@ -261,6 +263,7 @@ p > semibold {
 #font-metrics-overlay > .metric-line {
   height: 1px;
   width: 100%;
+  left: 0;
 }
 
 #font-metrics-overlay > .side-bearing-line {

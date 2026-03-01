@@ -56,11 +56,12 @@ class WordAnimator {
     this.setupEventListeners();
     this.loadWordList();
 
-    window.addEventListener('resize', () => {
+    this._resizeHandler = () => {
       if (this.container.firstChild) {
         this.textFitter.fitText(this.container.firstChild, this.container);
       }
-    });
+    };
+    window.addEventListener('resize', this._resizeHandler);
 
     this.variationAxes = new VariationAxes({
       container: document.getElementById('controls'),
@@ -143,8 +144,9 @@ class WordAnimator {
   setupEventListeners() {
     this.uiControls.setupSharedButtons();
 
-    // Keyboard controls
-    document.addEventListener('keydown', this.handleKeyPress.bind(this));
+    // Keyboard controls — save reference for cleanup in destroy().
+    this._keyHandler = this.handleKeyPress.bind(this);
+    document.addEventListener('keydown', this._keyHandler);
   }
 
   handleKeyPress(event) {
@@ -286,9 +288,18 @@ class WordAnimator {
   getRandomWord() {
     return this.processedWordList[Math.floor(Math.random() * this.processedWordList.length)];
   }
+
+  // Stop animation and remove all document-level event listeners.
+  destroy() {
+    this.stop();
+    document.removeEventListener('keydown', this._keyHandler);
+    window.removeEventListener('resize', this._resizeHandler);
+    this.uiControls.destroy();
+    this.dragAndDrop.destroy();
+  }
 }
 
-// Initialize the application
+// Standalone bootstrap (no-op in SPA mode — DOMContentLoaded won't fire).
 document.addEventListener('DOMContentLoaded', () => {
   const app = new WordAnimator();
   initAppNav();

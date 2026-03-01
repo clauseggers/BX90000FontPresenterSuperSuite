@@ -59,7 +59,7 @@ class FontViewer {
     this.uiControls.setupSharedButtons();
 
     // Add resize observer to handle window resizes and fullscreen changes
-    const resizeObserver = new ResizeObserver(() => {
+    this._resizeObserver = new ResizeObserver(() => {
       if (this.metricsOverlay.isVisible) {
         this.metricsOverlay.render(this.fontLoader.currentFont, this.glyphAnimator.displayElement);
       }
@@ -68,7 +68,7 @@ class FontViewer {
     // Observe the display container
     const displayContainer = document.querySelector('.display-container');
     if (displayContainer) {
-      resizeObserver.observe(displayContainer);
+      this._resizeObserver.observe(displayContainer);
     }
 
     // Glyph info toggle
@@ -99,11 +99,15 @@ class FontViewer {
     // Metrics toggle
     const metricsToggle = document.getElementById('metrics-toggle');
     if (metricsToggle) {
-      metricsToggle.addEventListener('click', () => this.metricsOverlay.toggle());
+      metricsToggle.addEventListener('click', () => {
+        this.metricsOverlay.toggle();
+        metricsToggle.textContent = this.metricsOverlay.isVisible ? 'Hide metrics' : 'Show metrics';
+      });
     }
 
-    // Keyboard controls
-    document.addEventListener('keydown', this.handleKeyPress.bind(this));
+    // Keyboard controls — save reference for cleanup in destroy().
+    this._keyHandler = this.handleKeyPress.bind(this);
+    document.addEventListener('keydown', this._keyHandler);
 
     // Slider controls
     this.setupSliderControls();
@@ -253,9 +257,20 @@ class FontViewer {
       break;
     }
   }
+
+  // Stop animation and remove all document-level event listeners.
+  destroy() {
+    this.glyphAnimator.stop();
+    document.removeEventListener('keydown', this._keyHandler);
+    this._resizeObserver?.disconnect();
+    this.uiControls.destroy();
+    this.dragAndDrop.destroy();
+  }
 }
 
-// Initialize the application
+// Standalone (non-SPA) bootstrap — DOMContentLoaded never fires when the
+// module is dynamically imported by AppShell, so this is a harmless no-op
+// in SPA mode.
 document.addEventListener('DOMContentLoaded', () => {
   const app = new FontViewer();
   initAppNav();

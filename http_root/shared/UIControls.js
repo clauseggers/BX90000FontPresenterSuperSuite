@@ -9,7 +9,14 @@ const FULLSCREEN_KEY = 'bx90000_fullscreen';
 export class UIControls {
   constructor(options = {}) {
     this.isDarkMode = sessionStorage.getItem(DARK_MODE_KEY) === 'true';
-    this.isFullscreen = false;
+    // Read the real fullscreen state rather than assuming false, so that
+    // button labels stay correct when an app is swapped while in fullscreen.
+    this.isFullscreen = Boolean(
+      document.fullscreenElement       ||
+      document.webkitFullscreenElement ||
+      document.mozFullScreenElement    ||
+      document.msFullscreenElement
+    );
     this._applyStoredColorScheme();
     this.setupEventListeners();
   }
@@ -34,6 +41,9 @@ export class UIControls {
     // --- Fullscreen button ---
     const fullscreenButton = document.getElementById('fullscreen-button');
     if (fullscreenButton) {
+      // Reflect actual state immediately so the label is correct after an app swap.
+      fullscreenButton.textContent = this.isFullscreen ? 'Windowed' : 'Fullscreen';
+
       // Attempt to restore fullscreen across navigation.
       // The browser may reject this if the page wasn't opened via a user
       // gesture; if so it fails silently.
@@ -79,11 +89,21 @@ export class UIControls {
   // -------------------------------------------------------------------------
 
   setupEventListeners() {
+    // Save bound reference so destroy() can remove the same listener.
+    this._fullscreenHandler = this.handleFullscreenChange.bind(this);
     // Fullscreen change events for different browsers
-    document.addEventListener('fullscreenchange',       this.handleFullscreenChange.bind(this));
-    document.addEventListener('webkitfullscreenchange', this.handleFullscreenChange.bind(this));
-    document.addEventListener('mozfullscreenchange',    this.handleFullscreenChange.bind(this));
-    document.addEventListener('MSFullscreenChange',     this.handleFullscreenChange.bind(this));
+    document.addEventListener('fullscreenchange',       this._fullscreenHandler);
+    document.addEventListener('webkitfullscreenchange', this._fullscreenHandler);
+    document.addEventListener('mozfullscreenchange',    this._fullscreenHandler);
+    document.addEventListener('MSFullscreenChange',     this._fullscreenHandler);
+  }
+
+  // Remove all document-level listeners added by this instance.
+  destroy() {
+    document.removeEventListener('fullscreenchange',       this._fullscreenHandler);
+    document.removeEventListener('webkitfullscreenchange', this._fullscreenHandler);
+    document.removeEventListener('mozfullscreenchange',    this._fullscreenHandler);
+    document.removeEventListener('MSFullscreenChange',     this._fullscreenHandler);
   }
 
   toggleFullscreen() {

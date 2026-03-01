@@ -208,12 +208,13 @@ class GalleyProof {
   setupEventListeners() {
     this.uiControls.setupSharedButtons();
 
-    // Keyboard controls
-    document.addEventListener('keydown', (event) => {
+    // Keyboard controls — save reference for cleanup in destroy().
+    this._keyHandler = (event) => {
       if (event.key === 'f') {
         this.uiControls.toggleFullscreen();
       }
-    });
+    };
+    document.addEventListener('keydown', this._keyHandler);
   }
 
   async loadText() {
@@ -302,9 +303,16 @@ class GalleyProof {
       this.container.firstChild.style.fontFeatureSettings = featureString;
     }
   }
+
+  // Remove all document-level event listeners.
+  destroy() {
+    document.removeEventListener('keydown', this._keyHandler);
+    this.uiControls.destroy();
+    this.dragAndDrop.destroy();
+  }
 }
 
-// Initialize the application
+// Standalone bootstrap (no-op in SPA mode — DOMContentLoaded won't fire).
 document.addEventListener('DOMContentLoaded', () => {
   const app = new GalleyProof();
   initAppNav();
