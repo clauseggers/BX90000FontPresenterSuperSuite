@@ -96,7 +96,7 @@ p > semibold {
   height: 23px;
   padding-left: 8px;
   padding-right: 8px;
-  margin-bottom: 6px;
+  /* margin-bottom: 6px; */
   background: transparent;
   color: var(--black);
   border: 1px solid var(--black);
