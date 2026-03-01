@@ -1,43 +1,49 @@
 # BX90000 Font Presenter Super Suite - Claude Code Guide
 
 ## Project Overview
-This is a client-side web application suite for presenting and exploring fonts. It consists of three distinct tools for font visualization, all built with vanilla JavaScript and using the `opentype.js` library for font parsing.
+This is a client-side web application suite for presenting and exploring fonts. It consists of four distinct tools for font visualization, all built with vanilla JavaScript and using the `opentype.js` library for font parsing.
 
 ## Architecture
 
-### Three Main Applications
+### Four Main Applications
 1. **HyperFlip BX90000 Dominator** - Animates individual glyphs from a font
 2. **WordMaster BX90000 Excelsior** - Animates words in the selected font
 3. **GalleyProof BX90000 Zenith** - Renders text columns for galley proofs
+4. **TurboTiler BX90000** - Renders repeating tiled patterns of glyphs
 
 Each application has its own HTML entry point and dedicated JavaScript modules.
 
 ### Project Structure
 ```
 http_root/
-├── index.html                        # Main landing page
+├── index.html                       # Main landing page
 ├── HyperFlipBX90000Dominator.html   # Glyph animator entry point
 ├── WordMasterBX90000Excelsior.html  # Word animator entry point
 ├── GalleyProofBX90000Zenith.html    # Galley proof entry point
+├── TurboTilerBX90000.html           # Tiled glyph pattern entry point
 ├── core/                            # Core font handling
 │   ├── FontLoader.js                # Font loading and caching
 │   ├── FontInfo.js                  # Font information extraction
 │   └── Types.js                     # Type definitions/utilities
 ├── shared/                          # Shared functionality
 │   ├── index.js                     # Shared module entry point
-│   ├── DragAndDrop.js              # Drag-and-drop font loading
-│   └── UIControls.js               # Common UI controls
+│   ├── DragAndDrop.js               # Drag-and-drop font loading
+│   └── UIControls.js                # Common UI controls
 ├── hyperflip/                       # HyperFlip specific modules
-│   ├── HyperFlip.js                # Main HyperFlip controller
-│   ├── GlyphAnimator.js            # Glyph animation logic
-│   ├── MetricsOverlay.js           # Font metrics visualization
-│   └── VariationAxes.js            # Variable font controls
+│   ├── HyperFlip.js                 # Main HyperFlip controller
+│   ├── GlyphAnimator.js             # Glyph animation logic
+│   ├── MetricsOverlay.js            # Font metrics visualization
+│   └── VariationAxes.js             # Variable font controls
 ├── wordmaster/                      # WordMaster specific modules
-│   ├── WordMaster.js               # Main WordMaster controller
-│   ├── TextFitter.js               # Text sizing logic
-│   └── OpenTypeFeatures.js         # OpenType feature controls
+│   ├── WordMaster.js                # Main WordMaster controller
+│   ├── TextFitter.js                # Text sizing logic
+│   └── OpenTypeFeatures.js          # OpenType feature controls
 ├── galleyproof/                     # GalleyProof specific modules
-│   └── GalleyProof.js              # Main GalleyProof controller
+│   └── GalleyProof.js               # Main GalleyProof controller
+├── turbotiler/                      # TurboTiler specific modules
+│   ├── TurboTiler.js                # Main TurboTiler controller
+│   ├── GridAnimator.js              # Grid animation logic
+│   └── GlyphGrid.js                 # Glyph grid rendering
 └── opentypejs/                      # Third-party library
     └── opentype.js                  # Local copy of OpenType.js
 ```
