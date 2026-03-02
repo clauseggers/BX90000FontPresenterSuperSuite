@@ -190,9 +190,10 @@ class FontViewer {
     try {
       this.glyphAnimator.setGlyphsFromFont(font)
       .then(() => {
-        const delay = parseInt(document.getElementById('animation-delay')?.value || 500);
         // Restore UI state (toggle settings + glyph position) from the previous visit.
+        // Must happen before start() so the animation delay and font size are correct.
         this._restoreHyperFlipState(getSavedHyperFlipState());
+        const delay = parseInt(document.getElementById('animation-delay')?.value || 500);
         this.glyphAnimator.start(delay);
       });
     } catch (error) {
@@ -266,11 +267,17 @@ class FontViewer {
   _saveHyperFlipState() {
     if (!this.fontLoader.currentFont) return;
     const glyphInfo = document.getElementById('glyph-info');
+    const fontSizeSlider        = document.getElementById('font-size');
+    const verticalPositionSlider = document.getElementById('vertical-position');
+    const animationDelaySlider  = document.getElementById('animation-delay');
     saveHyperFlipState({
-      isRandomOrder:    this.glyphAnimator.isRandomOrder,
-      isMetricsVisible: this.metricsOverlay.isVisible,
+      isRandomOrder:      this.glyphAnimator.isRandomOrder,
+      isMetricsVisible:   this.metricsOverlay.isVisible,
       isGlyphInfoVisible: glyphInfo ? glyphInfo.style.display !== 'none' : false,
-      glyphIndex:       this.glyphAnimator.currentIndex,
+      glyphIndex:         this.glyphAnimator.currentIndex,
+      fontSize:           fontSizeSlider         ? parseInt(fontSizeSlider.value)         : null,
+      verticalPosition:   verticalPositionSlider  ? parseInt(verticalPositionSlider.value)  : null,
+      animationDelay:     animationDelaySlider    ? parseInt(animationDelaySlider.value)    : null,
     });
   }
 
@@ -311,6 +318,39 @@ class FontViewer {
       if (glyphInfo) glyphInfo.style.display = 'block';
       const btn = document.getElementById('glyph-info-toggle');
       if (btn) btn.textContent = 'Hide glyph info';
+    }
+
+    // Font size slider
+    if (state.fontSize != null) {
+      const slider = document.getElementById('font-size');
+      if (slider) {
+        slider.value = state.fontSize;
+        slider.nextElementSibling.textContent = `${state.fontSize}px`;
+        this.glyphAnimator.displayElement.style.fontSize = `${state.fontSize}px`;
+      }
+    }
+
+    // Vertical position slider
+    if (state.verticalPosition != null) {
+      const slider = document.getElementById('vertical-position');
+      if (slider) {
+        slider.value = state.verticalPosition;
+        const reversedPosition = parseInt(slider.max) - state.verticalPosition;
+        slider.nextElementSibling.textContent = `${reversedPosition}%`;
+        this.glyphAnimator.displayElement.style.top = `${reversedPosition - 50}%`;
+      }
+    }
+
+    // Animation delay slider
+    if (state.animationDelay != null) {
+      const slider = document.getElementById('animation-delay');
+      if (slider) {
+        slider.value = state.animationDelay;
+        slider.nextElementSibling.textContent = `${state.animationDelay}ms`;
+        // The animator is started with this delay right after _restoreHyperFlipState returns,
+        // so we just update the slider's own interval reference here.
+        this.glyphAnimator.interval = state.animationDelay;
+      }
     }
   }
 
