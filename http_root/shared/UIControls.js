@@ -9,6 +9,17 @@ const COLOUR_CHOICE_KEY = 'bx90000_colour_choice';
 
 const DEFAULT_COLOUR = 'hsl(0deg 0% 0%)';
 
+const COLOURS = [
+  { label: 'Black',   value: 'hsl(0deg 0% 0%)'      },
+  { label: 'Red',     value: 'hsl(356deg 100% 60%)'  },
+  { label: 'Purple',  value: 'hsl(256deg 100% 60%)'  },
+  { label: 'Blue',    value: 'hsl(222deg 100% 60%)'  },
+  { label: 'Orange',  value: 'hsl(32deg 100% 50%)'   },
+  { label: 'Green',   value: 'hsl(100deg 60% 50%)'  },
+  { label: 'Cyan',    value: 'hsl(185deg 85% 55%)'   },
+  { label: 'Magenta', value: 'hsl(315deg 80% 60%)'   },
+];
+
 export class UIControls {
   constructor(options = {}) {
     this.isDarkMode   = sessionStorage.getItem(DARK_MODE_KEY) === 'true';
@@ -83,6 +94,10 @@ export class UIControls {
     // --- Colour picker ---
     const colourPicker = document.getElementById('colour-picker');
     if (colourPicker) {
+      // Populate options from the single source of truth
+      colourPicker.innerHTML = COLOURS.map(c =>
+        `<option value="${c.value}">${c.label}</option>`
+      ).join('');
       colourPicker.value = this.activeColour;
       colourPicker.addEventListener('change', () => {
         this.activeColour = colourPicker.value;
