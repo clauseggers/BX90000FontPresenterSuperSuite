@@ -7,7 +7,53 @@
 import { initAppNav } from './AppNav.js';
 
 // ---------------------------------------------------------------------------
-// App descriptors — HTML templates are the body content of each tool page.
+// HTML fragment helpers — shared structural pieces
+// ---------------------------------------------------------------------------
+
+// Top bar with the shared colour picker, swap, and fullscreen buttons.
+// Pass any app-specific button HTML as extraButtons.
+function topBar(extraButtons = '') {
+    return `
+      <div id="topBar">
+        <div id="appFunctions">
+          ${extraButtons}
+          <select id="colour-picker"></select>
+          <button id="background-toggle">Swap colours</button>
+          <button id="fullscreen-button">Fullscreen</button>
+        </div>
+      </div>`;
+}
+
+// Drop-zone prompt shown before a font is loaded.
+const DROP_TEXT = `<div id="drop-text">Drop your TTF or OTF font here</div>`;
+
+// A single font-info panel (used by wordmaster and galleyproof).
+const FONT_INFO_PANEL = `
+      <div id="info-panels">
+        <div id="font-info" style="display: none;">
+          <div id="font-info-content"></div>
+        </div>
+      </div>`;
+
+// OpenType feature toggle buttons row.
+const OT_FEATURES = `
+        <div class="buttons-container">
+          <label>OpenType features</label>
+          <div class="feature-buttons-wrapper"></div>
+        </div>`;
+
+// A labelled range slider with a displayed current value.
+function slider(label, attrs, defaultText) {
+    return `
+        <div class="slider-container">
+          <label>${label}</label>
+          <input type="range" ${attrs}>
+          <span class="value">${defaultText}</span>
+        </div>`;
+}
+
+// ---------------------------------------------------------------------------
+// App descriptors
 // ---------------------------------------------------------------------------
 
 const APPS = {
@@ -16,19 +62,13 @@ const APPS = {
         module:   () => import('../hyperflip/HyperFlip.js'),
         getClass: (mod) => mod.default,
         html: `
-      <div id="topBar">
-        <div id="appFunctions">
+      ${topBar(`
           <button id="randomize-button">Randomize glyph order</button>
           <button id="metrics-toggle">Show metrics</button>
           <button id="glyph-info-toggle">Show glyph info</button>
-          <button id="font-info-toggle">Show font info</button>
-          <select id="colour-picker"></select>
-          <button id="background-toggle">Swap colours</button>
-          <button id="fullscreen-button">Fullscreen</button>
-        </div>
-      </div>
+          <button id="font-info-toggle">Show font info</button>`)}
 
-      <div id="drop-text">Drop your TTF or OTF font here</div>
+      ${DROP_TEXT}
 
       <div class="display-container">
         <div id="glyph-display" class="glyph-buffer"></div>
@@ -48,21 +88,9 @@ const APPS = {
       </div>
 
       <div id="controls">
-        <div class="slider-container">
-          <label>Font size</label>
-          <input type="range" id="font-size" min="100" max="1000" value="600">
-          <span class="value">600px</span>
-        </div>
-        <div class="slider-container">
-          <label>Vertical position</label>
-          <input type="range" id="vertical-position" min="0" max="100" value="50">
-          <span class="value">50%</span>
-        </div>
-        <div class="slider-container">
-          <label>Animation delay</label>
-          <input type="range" id="animation-delay" min="16" max="1000" value="100">
-          <span class="value">100ms</span>
-        </div>
+        ${slider('Font size',         'id="font-size" min="100" max="1000" value="600"',     '600px')}
+        ${slider('Vertical position', 'id="vertical-position" min="0" max="100" value="50"', '50%')}
+        ${slider('Animation delay',   'id="animation-delay" min="16" max="1000" value="100"','100ms')}
       </div>
     `,
     },
@@ -72,45 +100,23 @@ const APPS = {
         module:   () => import('../wordmaster/WordMaster.js'),
         getClass: (mod) => mod.WordAnimator,
         html: `
-      <div id="topBar">
-        <div id="appFunctions">
-          <button id="font-info-toggle">Show font info</button>
-          <select id="colour-picker"></select>
-          <button id="background-toggle">Swap colours</button>
-          <button id="fullscreen-button">Fullscreen</button>
-        </div>
-      </div>
+      ${topBar(`<button id="font-info-toggle">Show font info</button>`)}
 
-      <div id="drop-text">Drop your TTF or OTF font here</div>
+      ${DROP_TEXT}
 
       <div class="display-container">
         <div id="word"></div>
         <div id="glyph-display" class="glyph-buffer"></div>
       </div>
 
-      <div id="info-panels">
-        <div id="font-info" style="display: none;">
-          <div id="font-info-content"></div>
-        </div>
-      </div>
+      ${FONT_INFO_PANEL}
 
       <div id="font-metrics-overlay"></div>
 
       <div id="controls">
-        <div class="buttons-container">
-          <label>OpenType features</label>
-          <div class="feature-buttons-wrapper"></div>
-        </div>
-        <div class="slider-container">
-          <label>Font size</label>
-          <input type="range" min="10" max="1000" value="600">
-          <span class="value">600px</span>
-        </div>
-        <div class="slider-container">
-          <label>Animation delay</label>
-          <input type="range" min="100" max="10000" value="3000">
-          <span class="value">3000ms</span>
-        </div>
+        ${OT_FEATURES}
+        ${slider('Font size',       'min="10" max="1000" value="600"',           '600px')}
+        ${slider('Animation delay', 'min="100" max="10000" value="3000"',        '3000ms')}
       </div>
     `,
     },
@@ -120,58 +126,24 @@ const APPS = {
         module:   () => import('../galleyproof/GalleyProof.js'),
         getClass: (mod) => mod.GalleyProof,
         html: `
-      <div id="topBar">
-        <div id="appFunctions">
-          <button id="font-info-toggle">Show font info</button>
-          <select id="colour-picker"></select>
-          <button id="background-toggle">Swap colours</button>
-          <button id="fullscreen-button">Fullscreen</button>
-        </div>
-      </div>
+      ${topBar(`<button id="font-info-toggle">Show font info</button>`)}
 
-      <div id="drop-text">Drop your TTF or OTF font here</div>
+      ${DROP_TEXT}
 
       <div class="display-container">
         <div id="galley"></div>
         <div id="glyph-display" class="glyph-buffer"></div>
       </div>
 
-      <div id="info-panels">
-        <div id="font-info" style="display: none;">
-          <div id="font-info-content"></div>
-        </div>
-      </div>
+      ${FONT_INFO_PANEL}
 
       <div id="controls">
-        <div class="buttons-container">
-          <label>OpenType features</label>
-          <div class="feature-buttons-wrapper"></div>
-        </div>
-        <div class="slider-container">
-          <label>Font size</label>
-          <input type="range" min="0.3" max="8" step="0.01" value="1">
-          <span class="value">1 rem</span>
-        </div>
-        <div class="slider-container">
-          <label>Leading</label>
-          <input type="range" min="0.5" max="4" step="0.01" value="1.20">
-          <span class="value">1.20×</span>
-        </div>
-        <div class="slider-container">
-          <label>Column width</label>
-          <input type="range" min="20" max="100" value="60">
-          <span class="value">60%</span>
-        </div>
-        <div class="slider-container">
-          <label>Letter spacing</label>
-          <input type="range" min="-0.2" max="0.5" step="0.001" value="0">
-          <span class="value">0 em</span>
-        </div>
-        <div class="slider-container">
-          <label>Word spacing</label>
-          <input type="range" min="-1" max="2" step="0.001" value="0">
-          <span class="value">0 em</span>
-        </div>
+        ${OT_FEATURES}
+        ${slider('Font size',      'min="0.3" max="8" step="0.01" value="1"',        '1 rem')}
+        ${slider('Leading',        'min="0.5" max="4" step="0.01" value="1.20"',     '1.20×')}
+        ${slider('Column width',   'min="20" max="100" value="60"',                  '60%')}
+        ${slider('Letter spacing', 'min="-0.2" max="0.5" step="0.001" value="0"',   '0 em')}
+        ${slider('Word spacing',   'min="-1" max="2" step="0.001" value="0"',        '0 em')}
       </div>
     `,
     },
@@ -181,15 +153,9 @@ const APPS = {
         module:   () => import('../turbotiler/TurboTiler.js'),
         getClass: (mod) => mod.TurboTiler,
         html: `
-      <div id="topBar">
-        <div id="appFunctions">
-          <select id="colour-picker"></select>
-          <button id="background-toggle" type="button">Swap colours</button>
-          <button id="fullscreen-button" type="button">Fullscreen</button>
-        </div>
-      </div>
+      ${topBar()}
 
-      <div id="drop-text">Drop your TTF or OTF font here</div>
+      ${DROP_TEXT}
 
       <div id="zoom-container">
         <div id="grid-container"></div>
