@@ -61,17 +61,26 @@ p > semibold {
   margin-top: 5px;
 }
 
-#appFunctions {
+#topBar {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 5px;
+  flex-direction: row-reverse;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  gap: 10px;
   position: fixed;
   top: 14px;
   right: 14px;
   z-index: 10000;
   max-width: calc(100vw - 28px);
+}
+
+#appFunctions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 1;
+  min-width: 0;
 }
 
 .buttons-container {
@@ -177,7 +186,7 @@ p > semibold {
 
 #info-panels {
   position: fixed;
-  top: 0;
+  top: var(--topbar-bottom, 0px);
   left: 0;
   z-index: 10000;
   display: flex;
@@ -387,10 +396,6 @@ input[type="range"]:focus::-moz-range-thumb {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
-  position: fixed;
-  top: 45px;
-  right: 14px;
-  z-index: 10000;
   text-align: right;
 }
 

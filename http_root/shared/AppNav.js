@@ -67,9 +67,20 @@ export function initAppNav(activeKey = null, onNavigate = null) {
         nav.appendChild(a);
     });
 
-    const appFunctions = document.getElementById('appFunctions');
-    if (appFunctions) {
-        appFunctions.insertAdjacentElement('afterend', nav);
+    const topBar = document.getElementById('topBar');
+    if (topBar) {
+        topBar.insertAdjacentElement('afterbegin', nav);
+
+        // Only push #info-panels down when the topBar overlaps the
+        // 300 px-wide info panel area on the left of the screen.
+        const updateTopbarBottom = () => {
+            const rect = topBar.getBoundingClientRect();
+            const offset = rect.left < 300 ? `${rect.bottom + 7}px` : '0px';
+            document.documentElement.style.setProperty('--topbar-bottom', offset);
+        };
+        updateTopbarBottom();
+        new ResizeObserver(updateTopbarBottom).observe(topBar);
+        window.addEventListener('resize', updateTopbarBottom);
     } else {
         document.body.appendChild(nav);
     }
