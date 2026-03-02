@@ -63,7 +63,7 @@ const APPS = {
         getClass: (mod) => mod.default,
         html: `
       ${topBar(`
-          <button id="randomize-button">Randomize glyph order</button>
+          <button id="randomise-button">Randomise glyph order</button>
           <button id="metrics-toggle">Show metrics</button>
           <button id="glyph-info-toggle">Show glyph info</button>
           <button id="font-info-toggle">Show font info</button>`)}

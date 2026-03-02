@@ -159,7 +159,7 @@ export class GlyphGrid {
     const content = cell.querySelector('.grid-cell-content');
 
     // Random glyph
-    const glyph = this.randomizeGlyph();
+    const glyph = this.randomiseGlyph();
     content.textContent = glyph;
 
     // Apply font family
@@ -167,21 +167,21 @@ export class GlyphGrid {
 
     // Random variation axes
     if (this.axes.length > 0) {
-      const axisSettings = this.randomizeAxes();
+      const axisSettings = this.randomiseAxes();
       content.style.fontVariationSettings = axisSettings;
     }
 
     // Random OpenType features
     if (this.features.length > 0) {
-      const featureSettings = this.randomizeFeatures();
+      const featureSettings = this.randomiseFeatures();
       content.style.fontFeatureSettings = featureSettings;
     }
   }
 
   /**
-   * Randomize all cells in the grid
+   * Randomise all cells in the grid
    */
-  randomizeAll() {
+  randomiseAll() {
     this.cells.forEach(cell => this.updateCell(cell));
   }
 
@@ -189,7 +189,7 @@ export class GlyphGrid {
    * Get a random glyph from the glyph list
    * @returns {string} A random character
    */
-  randomizeGlyph() {
+  randomiseGlyph() {
     if (this.glyphList.length === 0) return '?';
     const index = Math.floor(Math.random() * this.glyphList.length);
     return this.glyphList[index];
@@ -201,14 +201,14 @@ export class GlyphGrid {
    * Falls back to per-axis numerical randomisation for fonts without named instances.
    * @returns {string} CSS font-variation-settings string
    */
-  randomizeAxes() {
+  randomiseAxes() {
     if (this.axes.length === 0) return '';
 
     if (this.namedInstances.length > 0) {
-      return this.randomizeAxesFromNamedInstances();
+      return this.randomiseAxesFromNamedInstances();
     }
 
-    return this.randomizeAxesNumerically();
+    return this.randomiseAxesNumerically();
   }
 
   /**
@@ -216,7 +216,7 @@ export class GlyphGrid {
    * Any axes present in the font but absent from the instance fall back to their default value.
    * @returns {string} CSS font-variation-settings string
    */
-  randomizeAxesFromNamedInstances() {
+  randomiseAxesFromNamedInstances() {
     const index = Math.floor(Math.random() * this.namedInstances.length);
     const coordinates = this.namedInstances[index];
 
@@ -232,7 +232,7 @@ export class GlyphGrid {
    * Generate random axis values numerically (used when no named instances are present).
    * @returns {string} CSS font-variation-settings string
    */
-  randomizeAxesNumerically() {
+  randomiseAxesNumerically() {
     if (this.axes.length === 0) return '';
 
     const settings = this.axes.map(axis => {
@@ -373,7 +373,7 @@ export class GlyphGrid {
    * Generate random OpenType feature settings
    * @returns {string} CSS font-feature-settings string
    */
-  randomizeFeatures() {
+  randomiseFeatures() {
     if (this.features.length === 0) return '';
 
     /* Per-feature probability of being enabled (0.0–1.0).
@@ -390,7 +390,7 @@ export class GlyphGrid {
     };
     const DEFAULT_FEATURE_PROBABILITY = 0.5;
 
-    // Only randomize discretionary features. Required shaping features must remain untouched.
+    // Only randomise discretionary features. Required shaping features must remain untouched.
     const randomizablePattern = /^(ss\d\d|cv\d\d|case|ordn|smcp|sinf|sups|subs|pnum|tnum|onum|lnum|zero)$/;
     const randomizableFeatures = this.features.filter(feature => randomizablePattern.test(feature));
 

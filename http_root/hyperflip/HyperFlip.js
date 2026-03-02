@@ -78,14 +78,14 @@ class FontViewer {
       });
     }
 
-    // Randomize button
-    const randomizeButton = document.getElementById('randomize-button');
-    if (randomizeButton) {
-      randomizeButton.addEventListener('click', () => {
+    // Randomise button
+    const randomiseButton = document.getElementById('randomise-button');
+    if (randomiseButton) {
+      randomiseButton.addEventListener('click', () => {
         if (this.glyphAnimator) {
           this.glyphAnimator.toggleOrder();
-          randomizeButton.textContent = this.glyphAnimator.isRandomOrder ?
-          'Sequential glyph order' : 'Randomize glyph order';
+          randomiseButton.textContent = this.glyphAnimator.isRandomOrder ?
+          'Sequential glyph order' : 'Randomise glyph order';
         }
       });
     }
@@ -289,10 +289,10 @@ class FontViewer {
   _restoreHyperFlipState(state) {
     if (!state) return;
 
-    // Randomize order — toggleOrder() shuffles and resets currentIndex to 0.
+    // Randomise order — toggleOrder() shuffles and resets currentIndex to 0.
     if (state.isRandomOrder) {
       this.glyphAnimator.toggleOrder();
-      const btn = document.getElementById('randomize-button');
+      const btn = document.getElementById('randomise-button');
       if (btn) btn.textContent = 'Sequential glyph order';
     }
 
