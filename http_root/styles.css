@@ -63,12 +63,15 @@ p > semibold {
 
 #appFunctions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 5px;
   position: fixed;
   top: 14px;
   right: 14px;
   z-index: 10000;
+  max-width: calc(100vw - 28px);
 }
 
 .buttons-container {
