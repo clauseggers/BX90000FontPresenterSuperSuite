@@ -1,6 +1,6 @@
 /* TurboTiler BX90000 Fascination - Grid-based glyph animator with camera zoom */
 
-/* Top button bar — uses shared #fullScreen styles from styles.css */
+/* Top button bar — uses shared #appFunctions styles from styles.css */
 
 #zoom-container {
   position: fixed;

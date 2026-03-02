@@ -67,9 +67,9 @@ export function initAppNav(activeKey = null, onNavigate = null) {
         nav.appendChild(a);
     });
 
-    const fullScreen = document.getElementById('fullScreen');
-    if (fullScreen) {
-        fullScreen.insertAdjacentElement('afterend', nav);
+    const appFunctions = document.getElementById('appFunctions');
+    if (appFunctions) {
+        appFunctions.insertAdjacentElement('afterend', nav);
     } else {
         document.body.appendChild(nav);
     }

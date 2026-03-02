@@ -16,7 +16,7 @@ const APPS = {
         module:   () => import('../hyperflip/HyperFlip.js'),
         getClass: (mod) => mod.default,
         html: `
-      <div id="fullScreen">
+      <div id="appFunctions">
         <button id="randomize-button">Randomize glyph order</button>
         <button id="metrics-toggle">Show metrics</button>
         <button id="glyph-info-toggle">Show glyph info</button>
@@ -69,7 +69,7 @@ const APPS = {
         module:   () => import('../wordmaster/WordMaster.js'),
         getClass: (mod) => mod.WordAnimator,
         html: `
-      <div id="fullScreen">
+      <div id="appFunctions">
         <button id="font-info-toggle">Show font info</button>
         <button id="background-toggle">Swap colours</button>
         <button id="fullscreen-button">Fullscreen</button>
@@ -114,7 +114,7 @@ const APPS = {
         module:   () => import('../galleyproof/GalleyProof.js'),
         getClass: (mod) => mod.GalleyProof,
         html: `
-      <div id="fullScreen">
+      <div id="appFunctions">
         <button id="font-info-toggle">Show font info</button>
         <button id="background-toggle">Swap colours</button>
         <button id="fullscreen-button">Fullscreen</button>
@@ -172,7 +172,7 @@ const APPS = {
         module:   () => import('../turbotiler/TurboTiler.js'),
         getClass: (mod) => mod.TurboTiler,
         html: `
-      <div id="fullScreen">
+      <div id="appFunctions">
         <button id="background-toggle" type="button">Swap colours</button>
         <button id="fullscreen-button" type="button">Fullscreen</button>
       </div>
@@ -228,7 +228,7 @@ export async function switchApp(key) {
     // Update browser tab title.
     document.title = descriptor.title;
 
-    // Inject the nav (requires #fullScreen to already be in the DOM).
+    // Inject the nav (requires #appFunctions to already be in the DOM).
     initAppNav(key, (href) => {
         const nextKey = HREF_TO_KEY[href];
         if (nextKey) switchApp(nextKey);
