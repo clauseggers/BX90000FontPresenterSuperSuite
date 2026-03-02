@@ -90,7 +90,7 @@ const APPS = {
       <div id="controls">
         ${slider('Font size',         'id="font-size" min="100" max="1000" value="600"',     '600px')}
         ${slider('Vertical position', 'id="vertical-position" min="0" max="100" value="50"', '50%')}
-        ${slider('Animation delay',   'id="animation-delay" min="16" max="1000" value="100"','100ms')}
+        ${slider('Animation delay',   'id="animation-delay" min="16" max="2000" value="500"','500ms')}
       </div>
     `,
     },

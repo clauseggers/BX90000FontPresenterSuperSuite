@@ -186,7 +186,8 @@ class FontViewer {
     try {
       this.glyphAnimator.setGlyphsFromFont(font)
       .then(() => {
-        this.glyphAnimator.start(100);
+        const delay = parseInt(document.getElementById('animation-delay')?.value || 500);
+        this.glyphAnimator.start(delay);
       });
     } catch (error) {
       this.handleError(error);
