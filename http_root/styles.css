@@ -131,6 +131,7 @@ p > semibold {
   opacity: 1;
   border-radius: 5px;
   position: relative;
+  outline: none;
   z-index: 10000;
   -webkit-transition: .2s;
   transition: .2s;
