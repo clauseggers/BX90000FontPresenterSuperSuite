@@ -39,13 +39,6 @@ class FontViewer {
       onChange: this.handleAxesChange.bind(this)
     });
 
-    // Make sure these are after the VariationAxes initialization
-    const controls = document.getElementById('controls');
-    const buttonsContainer = controls.querySelector('.buttons-container');
-    if (!buttonsContainer) {
-      console.error('Buttons container not found!');
-    }
-
     this.uiControls = new UIControls();
 
     // Note: We're now using document.body as the dropZone
