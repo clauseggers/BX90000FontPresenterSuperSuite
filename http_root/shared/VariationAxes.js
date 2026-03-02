@@ -2,7 +2,7 @@
 // shared/VariationAxes.js
 // =============================================================================
 
-import { saveInstanceIndex, getSavedInstanceIndex } from './FontSession.js';
+import { saveInstanceIndex, getSavedInstanceIndex, saveAxisSettings, getSavedAxisSettings, saveLastChanged, getSavedLastChanged } from './FontSession.js';
 
 export class VariationAxes {
   constructor(options) {
@@ -53,7 +53,10 @@ export class VariationAxes {
         const idx = parseInt(e.target.value);
         if (!isNaN(idx)) {
           saveInstanceIndex(idx);
+          saveLastChanged('instance');
           this.setAxesValues(instances[idx].coordinates);
+          // Snapshot the resulting axis state so the next page can restore it exactly
+          saveAxisSettings({ ...this.currentSettings });
         }
       });
 
@@ -109,7 +112,18 @@ export class VariationAxes {
       this.axisContainer.appendChild(container);
     });
 
-    // Restore saved instance after sliderMap is fully populated
+    // Restore state after sliderMap is fully populated
+    const lastChanged = getSavedLastChanged();
+    const savedAxisSettings = getSavedAxisSettings();
+
+    // If sliders were the last thing the user touched, use those values (even if
+    // a named instance is also recorded — the manual edits take precedence).
+    if (lastChanged === 'sliders' && savedAxisSettings) {
+      this.setAxesValues(savedAxisSettings);
+      return; // setAxesValues already calls updateVariationSettings
+    }
+
+    // Otherwise fall back to the saved named instance (existing behaviour).
     if (this._instanceSelect && this._instances.length > 0) {
       const savedIdx = getSavedInstanceIndex();
       if (savedIdx !== null && savedIdx < this._instances.length) {
@@ -150,6 +164,9 @@ export class VariationAxes {
     } else {
       this.currentSettings[tag] = numValue;
     }
+    // Persist slider state so it survives page navigation
+    saveAxisSettings({ ...this.currentSettings });
+    saveLastChanged('sliders');
     this.updateVariationSettings();
   }
 

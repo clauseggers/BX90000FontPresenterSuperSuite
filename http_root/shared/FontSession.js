@@ -3,8 +3,11 @@
 // Persists the loaded font binary across page navigations via sessionStorage.
 // =============================================================================
 
-const STORAGE_KEY = 'bx90000_font';
-const INSTANCE_KEY = 'bx90000_instance';
+const STORAGE_KEY      = 'bx90000_font';
+const INSTANCE_KEY     = 'bx90000_instance';
+const AXIS_KEY         = 'bx90000_axes';
+const LAST_CHANGED_KEY = 'bx90000_last_changed';
+const HYPERFLIP_KEY    = 'bx90000_hyperflip';
 
 /**
  * Saves the selected named instance index to sessionStorage.
@@ -28,6 +31,55 @@ export function getSavedInstanceIndex() {
     if (val === null) return null;
     const idx = parseInt(val, 10);
     return isNaN(idx) ? null : idx;
+}
+
+/**
+ * Saves the current axis settings object (tag → value map) to sessionStorage.
+ * @param {Object} settings - e.g. { wght: 400, wdth: 100 }
+ */
+export function saveAxisSettings(settings) {
+    if (settings === null || settings === undefined) {
+        sessionStorage.removeItem(AXIS_KEY);
+        return;
+    }
+    try {
+        sessionStorage.setItem(AXIS_KEY, JSON.stringify(settings));
+    } catch (e) {
+        // Ignore storage errors
+    }
+}
+
+/**
+ * Retrieves the saved axis settings object, or null if none saved.
+ * @returns {Object|null}
+ */
+export function getSavedAxisSettings() {
+    try {
+        const val = sessionStorage.getItem(AXIS_KEY);
+        return val ? JSON.parse(val) : null;
+    } catch (e) {
+        return null;
+    }
+}
+
+/**
+ * Records which control was most recently changed.
+ * @param {'instance'|'sliders'} source
+ */
+export function saveLastChanged(source) {
+    if (source === null || source === undefined) {
+        sessionStorage.removeItem(LAST_CHANGED_KEY);
+    } else {
+        sessionStorage.setItem(LAST_CHANGED_KEY, source);
+    }
+}
+
+/**
+ * Returns which control was most recently changed, or null if nothing was recorded.
+ * @returns {'instance'|'sliders'|null}
+ */
+export function getSavedLastChanged() {
+    return sessionStorage.getItem(LAST_CHANGED_KEY) || null;
 }
 
 /**
@@ -68,6 +120,35 @@ export function getSavedFont() {
             bytes[i] = binary.charCodeAt(i);
         }
         return { buffer: bytes.buffer, filename };
+    } catch (e) {
+        return null;
+    }
+}
+/**
+ * Saves HyperFlip UI state (toggle settings + glyph position) to sessionStorage.
+ * Pass null to clear any saved state.
+ * @param {{ isRandomOrder: boolean, isMetricsVisible: boolean, isGlyphInfoVisible: boolean, glyphIndex: number } | null} state
+ */
+export function saveHyperFlipState(state) {
+    if (state === null || state === undefined) {
+        sessionStorage.removeItem(HYPERFLIP_KEY);
+        return;
+    }
+    try {
+        sessionStorage.setItem(HYPERFLIP_KEY, JSON.stringify(state));
+    } catch (e) {
+        // Ignore storage errors
+    }
+}
+
+/**
+ * Retrieves the saved HyperFlip UI state, or null if none saved.
+ * @returns {{ isRandomOrder: boolean, isMetricsVisible: boolean, isGlyphInfoVisible: boolean, glyphIndex: number } | null}
+ */
+export function getSavedHyperFlipState() {
+    try {
+        const val = sessionStorage.getItem(HYPERFLIP_KEY);
+        return val ? JSON.parse(val) : null;
     } catch (e) {
         return null;
     }

@@ -3,6 +3,7 @@
 // =============================================================================
 
 import { FontLoader } from '../core/FontLoader.js';
+import { saveHyperFlipState, getSavedHyperFlipState } from '../shared/FontSession.js';
 import { FontInfoRenderer } from '../core/FontInfo.js';
 import { GlyphAnimator } from './GlyphAnimator.js';
 import { MetricsOverlay } from '../shared/MetricsOverlay.js';
@@ -160,6 +161,9 @@ class FontViewer {
         dropText.parentNode.removeChild(dropText);
       }
 
+      // Clear any saved HyperFlip state so fresh font starts clean.
+      saveHyperFlipState(null);
+
       const { font, fontInfo, fontFamily } = await this.fontLoader.loadFont(buffer, filename);
       this.handleFontLoaded({ font, fontInfo, fontFamily });
     } catch (error) {
@@ -187,6 +191,8 @@ class FontViewer {
       this.glyphAnimator.setGlyphsFromFont(font)
       .then(() => {
         const delay = parseInt(document.getElementById('animation-delay')?.value || 500);
+        // Restore UI state (toggle settings + glyph position) from the previous visit.
+        this._restoreHyperFlipState(getSavedHyperFlipState());
         this.glyphAnimator.start(delay);
       });
     } catch (error) {
@@ -252,8 +258,66 @@ class FontViewer {
     }
   }
 
+  /**
+   * Captures the current toggle states and glyph position into sessionStorage so
+   * they can be restored when the user returns to this page.
+   * Only writes state when a font is actually loaded.
+   */
+  _saveHyperFlipState() {
+    if (!this.fontLoader.currentFont) return;
+    const glyphInfo = document.getElementById('glyph-info');
+    saveHyperFlipState({
+      isRandomOrder:    this.glyphAnimator.isRandomOrder,
+      isMetricsVisible: this.metricsOverlay.isVisible,
+      isGlyphInfoVisible: glyphInfo ? glyphInfo.style.display !== 'none' : false,
+      glyphIndex:       this.glyphAnimator.currentIndex,
+    });
+  }
+
+  /**
+   * Applies a previously saved HyperFlip state to the UI and animator.
+   * Must be called after setGlyphsFromFont() and before start().
+   * @param {{ isRandomOrder: boolean, isMetricsVisible: boolean, isGlyphInfoVisible: boolean, glyphIndex: number } | null} state
+   */
+  _restoreHyperFlipState(state) {
+    if (!state) return;
+
+    // Randomize order — toggleOrder() shuffles and resets currentIndex to 0.
+    if (state.isRandomOrder) {
+      this.glyphAnimator.toggleOrder();
+      const btn = document.getElementById('randomize-button');
+      if (btn) btn.textContent = 'Sequential glyph order';
+    }
+
+    // Glyph position — only meaningful for sequential order; random always
+    // starts from a freshly shuffled position 0 (set above by toggleOrder).
+    if (!state.isRandomOrder && state.glyphIndex > 0) {
+      this.glyphAnimator.currentIndex = Math.min(
+        state.glyphIndex,
+        this.glyphAnimator.glyphs.length - 1
+      );
+    }
+
+    // Metrics overlay
+    if (state.isMetricsVisible) {
+      this.metricsOverlay.toggle();
+      const btn = document.getElementById('metrics-toggle');
+      if (btn) btn.textContent = 'Hide metrics';
+    }
+
+    // Glyph info panel
+    if (state.isGlyphInfoVisible) {
+      const glyphInfo = document.getElementById('glyph-info');
+      if (glyphInfo) glyphInfo.style.display = 'block';
+      const btn = document.getElementById('glyph-info-toggle');
+      if (btn) btn.textContent = 'Hide glyph info';
+    }
+  }
+
   // Stop animation and remove all document-level event listeners.
   destroy() {
+    // Persist current state before the DOM is torn down.
+    this._saveHyperFlipState();
     this.glyphAnimator.stop();
     document.removeEventListener('keydown', this._keyHandler);
     this._resizeObserver?.disconnect();

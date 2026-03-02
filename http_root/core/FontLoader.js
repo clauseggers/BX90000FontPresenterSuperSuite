@@ -3,7 +3,7 @@
 // =============================================================================
 
 import { getFontInformation } from './FontInfo.js';
-import { saveFont, getSavedFont, saveInstanceIndex } from '../shared/FontSession.js';
+import { saveFont, getSavedFont, saveInstanceIndex, saveAxisSettings, saveLastChanged } from '../shared/FontSession.js';
 
 export class FontLoader {
   /**
@@ -48,7 +48,11 @@ export class FontLoader {
       console.log('Font info generated:', fontInfo);
 
       saveFont(buffer, filename);
-      if (!preserveInstance) saveInstanceIndex(null);
+      if (!preserveInstance) {
+        saveInstanceIndex(null);
+        saveAxisSettings(null);
+        saveLastChanged(null);
+      }
       this.callbacks.onFontLoaded?.({ font, fontInfo, fontFamily: uniqueFontName, buffer });
       return { font, fontInfo, fontFamily: uniqueFontName, buffer };
 
