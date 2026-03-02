@@ -415,7 +415,9 @@ input[type="range"]:focus::-moz-range-thumb {
 }
 
 #appNav a.active {
-  opacity: 0.25;
+  background: var(--black);
+  color: var(--white);
+  border: 1px solid var(--black);
   cursor: default;
   pointer-events: none;
 }
