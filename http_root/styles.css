@@ -109,6 +109,7 @@ p > semibold {
 }
 
 #appFunctions button,
+#colour-picker,
 #font-info-toggle,
 #glyph-info-toggle,
 #metrics-toggle,
@@ -137,6 +138,14 @@ p > semibold {
 
 .feature-buttons-wrapper button {
   margin-right: 0;
+}
+
+/* Restore native dropdown arrow for the colour picker */
+#colour-picker {
+  -webkit-appearance: auto;
+  appearance: auto;
+  padding-right: 4px;
+  outline: none;
 }
 
 #appFunctions button > span {

@@ -2,13 +2,17 @@
 // shared/UIControls.js
 // =============================================================================
 
-const DARK_MODE_KEY  = 'bx90000_dark_mode';
-const FONT_INFO_KEY  = 'bx90000_font_info';
-const FULLSCREEN_KEY = 'bx90000_fullscreen';
+const DARK_MODE_KEY    = 'bx90000_dark_mode';
+const FONT_INFO_KEY    = 'bx90000_font_info';
+const FULLSCREEN_KEY   = 'bx90000_fullscreen';
+const COLOUR_CHOICE_KEY = 'bx90000_colour_choice';
+
+const DEFAULT_COLOUR = 'hsl(0deg 0% 0%)';
 
 export class UIControls {
   constructor(options = {}) {
-    this.isDarkMode = sessionStorage.getItem(DARK_MODE_KEY) === 'true';
+    this.isDarkMode   = sessionStorage.getItem(DARK_MODE_KEY) === 'true';
+    this.activeColour = sessionStorage.getItem(COLOUR_CHOICE_KEY) || DEFAULT_COLOUR;
     // Read the real fullscreen state rather than assuming false, so that
     // button labels stay correct when an app is swapped while in fullscreen.
     this.isFullscreen = Boolean(
@@ -27,8 +31,10 @@ export class UIControls {
 
   _applyStoredColorScheme() {
     if (this.isDarkMode) {
-      document.documentElement.style.setProperty('--white', 'rgb(0, 0, 0)');
+      document.documentElement.style.setProperty('--white', this.activeColour);
       document.documentElement.style.setProperty('--black', 'rgb(255, 255, 255)');
+    } else {
+      document.documentElement.style.setProperty('--black', this.activeColour);
     }
   }
 
@@ -71,6 +77,22 @@ export class UIControls {
         fontInfo.style.display     = isVisible ? 'none' : 'block';
         fontInfoToggle.textContent = isVisible ? 'Show font info' : 'Hide font info';
         sessionStorage.setItem(FONT_INFO_KEY, String(!isVisible));
+      });
+    }
+
+    // --- Colour picker ---
+    const colourPicker = document.getElementById('colour-picker');
+    if (colourPicker) {
+      colourPicker.value = this.activeColour;
+      colourPicker.addEventListener('change', () => {
+        this.activeColour = colourPicker.value;
+        sessionStorage.setItem(COLOUR_CHOICE_KEY, this.activeColour);
+        if (this.isDarkMode) {
+          document.documentElement.style.setProperty('--white', this.activeColour);
+        } else {
+          document.documentElement.style.setProperty('--black', this.activeColour);
+        }
+        colourPicker.blur();
       });
     }
 
@@ -161,11 +183,11 @@ export class UIControls {
     sessionStorage.setItem(DARK_MODE_KEY, String(this.isDarkMode));
     document.documentElement.style.setProperty(
       '--white',
-      this.isDarkMode ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)'
+      this.isDarkMode ? this.activeColour : 'rgb(255, 255, 255)'
     );
     document.documentElement.style.setProperty(
       '--black',
-      this.isDarkMode ? 'rgb(255, 255, 255)' : 'rgb(0, 0, 0)'
+      this.isDarkMode ? 'rgb(255, 255, 255)' : this.activeColour
     );
   }
 }
