@@ -33,8 +33,11 @@ export class VariationAxes {
             instancesRow.className = 'slider-container instances-container';
             const label = document.createElement('label');
             label.textContent = 'Named instances';
+            label.htmlFor = 'font-instances';
             const select = document.createElement('select');
             select.className = 'instances-select';
+            select.id = 'font-instances';
+            select.name = 'font-instances';
             instances.forEach((inst, i) => {
                 const option = document.createElement('option');
                 option.value = String(i);
@@ -70,10 +73,13 @@ export class VariationAxes {
         for (const axis of axes) {
             const row = document.createElement('div');
             row.className = 'slider-container variation-axis';
+            const sliderId = `axis-${axis.tag}`;
             const label = document.createElement('label');
             label.textContent = `${axis.name} (${axis.tag})`;
+            label.htmlFor = sliderId;
             const slider = document.createElement('input');
             slider.type = 'range';
+            slider.id = sliderId;
             slider.min = String(axis.min);
             slider.max = String(axis.max);
             slider.value = String(axis.default);

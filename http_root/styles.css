@@ -93,7 +93,8 @@ p > semibold {
   gap: 10px;
 }
 
-.buttons-container > label {
+.buttons-container > label,
+.buttons-container > .controls-section-heading {
   color: var(--black);
   font-size: 0.7rem;
   min-width: 120px;
@@ -310,7 +311,8 @@ p > semibold {
   gap: 10px;
 }
 
-.slider-container label {
+.slider-container label,
+.slider-container .controls-section-heading {
   color: var(--black);
   font-size: 0.7rem;
   min-width: 120px;

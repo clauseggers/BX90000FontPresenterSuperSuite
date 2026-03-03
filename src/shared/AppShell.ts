@@ -44,15 +44,15 @@ const FONT_INFO_PANEL = `
 
 const OT_FEATURES = `
         <div class="buttons-container">
-          <label>OpenType features</label>
+          <span class="controls-section-heading">OpenType features</span>
           <div class="feature-buttons-wrapper"></div>
         </div>`;
 
-function slider(label: string, attrs: string, defaultText: string): string {
+function slider(id: string, label: string, attrs: string, defaultText: string): string {
   return `
         <div class="slider-container">
-          <label>${label}</label>
-          <input type="range" ${attrs}>
+          <label for="${id}">${label}</label>
+          <input type="range" id="${id}" ${attrs}>
           <span class="value">${defaultText}</span>
         </div>`;
 }
@@ -100,9 +100,9 @@ const APPS: Readonly<Record<string, AppDescriptor>> = {
       </div>
 
       <div id="controls">
-        ${slider('Font size',         'id="font-size" min="100" max="1000" value="600"',     '600px')}
-        ${slider('Vertical position', 'id="vertical-position" min="0" max="100" value="50"', '50%')}
-        ${slider('Animation delay',   'id="animation-delay" min="16" max="2000" value="500"','500ms')}
+        ${slider('font-size',          'Font size',         'min="100" max="1000" value="600"',     '600px')}
+        ${slider('vertical-position',  'Vertical position', 'min="0" max="100" value="50"',          '50%')}
+        ${slider('animation-delay',    'Animation delay',   'min="16" max="2000" value="500"',       '500ms')}
       </div>
     `,
   },
@@ -127,8 +127,8 @@ const APPS: Readonly<Record<string, AppDescriptor>> = {
 
       <div id="controls">
         ${OT_FEATURES}
-        ${slider('Font size',       'min="10" max="1000" value="600"',    '600px')}
-        ${slider('Animation delay', 'min="100" max="10000" value="3000"', '3000ms')}
+        ${slider('wordmaster-font-size',       'Font size',       'min="10" max="1000" value="600"',    '600px')}
+        ${slider('wordmaster-animation-delay', 'Animation delay', 'min="100" max="10000" value="3000"', '3000ms')}
       </div>
     `,
   },
@@ -151,11 +151,11 @@ const APPS: Readonly<Record<string, AppDescriptor>> = {
 
       <div id="controls">
         ${OT_FEATURES}
-        ${slider('Font size',      'min="0.3" max="8" step="0.01" value="1"',       '1 rem')}
-        ${slider('Leading',        'min="0.5" max="4" step="0.01" value="1.20"',    '1.20×')}
-        ${slider('Column width',   'min="20" max="100" value="60"',                 '60%')}
-        ${slider('Letter spacing', 'min="-0.2" max="0.5" step="0.001" value="0"',  '0 em')}
-        ${slider('Word spacing',   'min="-1" max="2" step="0.001" value="0"',       '0 em')}
+        ${slider('galley-font-size',      'Font size',      'min="0.3" max="8" step="0.01" value="1"',       '1 rem')}
+        ${slider('galley-leading',        'Leading',        'min="0.5" max="4" step="0.01" value="1.20"',    '1.20×')}
+        ${slider('galley-column-width',   'Column width',   'min="20" max="100" value="60"',                 '60%')}
+        ${slider('galley-letter-spacing', 'Letter spacing', 'min="-0.2" max="0.5" step="0.001" value="0"',  '0 em')}
+        ${slider('galley-word-spacing',   'Word spacing',   'min="-1" max="2" step="0.001" value="0"',       '0 em')}
       </div>
     `,
   },
