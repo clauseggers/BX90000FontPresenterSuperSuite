@@ -1,91 +1,72 @@
 // =============================================================================
-// core/FontLoader.js
+// core/FontLoader.ts
 // =============================================================================
-
 import { getFontInformation } from './FontInfo.js';
 import { saveFont, getSavedFont, saveInstanceIndex, saveAxisSettings, saveLastChanged } from '../shared/FontSession.js';
-
 export class FontLoader {
-  /**
-   * Creates a new FontLoader instance
-   * @param {Object} options - Configuration options
-   * @param {Function} options.onFontLoaded - Callback when font is loaded
-   * @param {Function} options.onError - Callback when error occurs
-   */
-  constructor(options = {}) {
-    this.currentFont = null;
-    this.callbacks = options;
-  }
-
-  /**
-   * Loads a font from an ArrayBuffer
-   * @param {ArrayBuffer} buffer - The font file buffer
-   * @param {string} filename - Original filename
-   * @returns {Promise<Object>} Font information and loaded font
-   */
-  async loadFont(buffer, filename, { preserveInstance = false } = {}) {
-    try {
-      // Parse the font using OpenType.js
-      const font = opentype.parse(buffer);
-      console.log('OpenType parsed font:', {
-        tables: Object.keys(font.tables),
-        hasFvar: !!font.tables.fvar,
-        axes: font.tables.fvar?.axes
-      });
-
-      // Create a unique name for this font instance
-      const uniqueFontName = `Font_${Date.now()}`;
-
-      // Create and load the font face
-      const fontFace = new FontFace(uniqueFontName, buffer);
-      await fontFace.load();
-      document.fonts.add(fontFace);
-
-      // Store current font and get info
-      this.currentFont = font;
-      const fontInfo = getFontInformation(font, filename);
-
-      console.log('Font info generated:', fontInfo);
-
-      saveFont(buffer, filename);
-      if (!preserveInstance) {
-        saveInstanceIndex(null);
-        saveAxisSettings(null);
-        saveLastChanged(null);
-      }
-      this.callbacks.onFontLoaded?.({ font, fontInfo, fontFamily: uniqueFontName, buffer });
-      return { font, fontInfo, fontFamily: uniqueFontName, buffer };
-
-    } catch (error) {
-      console.error('Error loading font:', error);
-      this.callbacks.onError?.(error);
-      throw error;
+    currentFont = null;
+    callbacks;
+    constructor(options = {}) {
+        this.callbacks = options;
     }
-  }
-
-  /**
-   * Restores the last used font from sessionStorage, if any.
-   * Call this on DOMContentLoaded to carry the font across page navigations.
-   */
-  async restoreFromSession() {
-    const saved = getSavedFont();
-    if (!saved) return;
-    const dropText = document.getElementById('drop-text');
-    if (dropText) dropText.remove();
-    await this.loadFont(saved.buffer, saved.filename, { preserveInstance: true });
-  }
-
-  /**
-   * Cleans up the current font
-   */
-  cleanup() {
-    if (this.currentFont) {
-      document.fonts.forEach(font => {
-        if (font.family.startsWith('Font_')) {
-          document.fonts.delete(font);
+    /**
+     * Loads a font from an ArrayBuffer, registers it with the browser as a
+     * FontFace, and returns a FontLoadResult.
+     */
+    async loadFont(buffer, filename = '', { preserveInstance = false } = {}) {
+        try {
+            const font = opentype.parse(buffer);
+            console.log('OpenType parsed font:', {
+                tables: Object.keys(font.tables),
+                hasFvar: !!font.tables.fvar,
+                axes: font.tables.fvar?.axes,
+            });
+            const uniqueFontName = `Font_${Date.now()}`;
+            const fontFace = new FontFace(uniqueFontName, buffer);
+            await fontFace.load();
+            document.fonts.add(fontFace);
+            this.currentFont = font;
+            const fontInfo = getFontInformation(font, filename);
+            console.log('Font info generated:', fontInfo);
+            saveFont(buffer, filename);
+            if (!preserveInstance) {
+                saveInstanceIndex(null);
+                saveAxisSettings(null);
+                saveLastChanged(null);
+            }
+            const result = { font, fontInfo, fontFamily: uniqueFontName, buffer };
+            this.callbacks.onFontLoaded?.(result);
+            return result;
         }
-      });
-      this.currentFont = null;
+        catch (err) {
+            const error = err instanceof Error ? err : new Error(String(err));
+            console.error('Error loading font:', error);
+            this.callbacks.onError?.(error);
+            throw error;
+        }
     }
-  }
+    /**
+     * Restores the last loaded font from sessionStorage (survives page navigation).
+     * Safe to call on DOMContentLoaded — a no-op when no font has been saved.
+     */
+    async restoreFromSession() {
+        const saved = getSavedFont();
+        if (!saved)
+            return;
+        const dropText = document.getElementById('drop-text');
+        dropText?.remove();
+        await this.loadFont(saved.buffer, saved.filename, { preserveInstance: true });
+    }
+    /** Removes any FontFace instances attached by this loader and clears state. */
+    cleanup() {
+        if (this.currentFont) {
+            document.fonts.forEach(face => {
+                if (face.family.startsWith('Font_')) {
+                    document.fonts.delete(face);
+                }
+            });
+            this.currentFont = null;
+        }
+    }
 }
+//# sourceMappingURL=FontLoader.js.map

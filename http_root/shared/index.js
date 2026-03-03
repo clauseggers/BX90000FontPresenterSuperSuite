@@ -1,20 +1,16 @@
 // =============================================================================
-// shared/index.js
+// shared/index.ts
+// Minimal bootstrap used by the standalone (non-SPA) legacy HTML pages.
 // =============================================================================
-
 import { UIControls } from './UIControls.js';
-
 const uiControls = new UIControls();
-
-// Fullscreen button handler
 const fullscreenButton = document.getElementById('fullscreen-button');
-fullscreenButton.addEventListener('click', () => {
+fullscreenButton?.addEventListener('click', () => {
     uiControls.toggleFullscreen();
 });
-
-// Keyboard shortcut
 document.addEventListener('keydown', (event) => {
     if (event.key === 'f') {
         uiControls.toggleFullscreen();
     }
 });
+//# sourceMappingURL=index.js.map

@@ -1,0 +1,1 @@
+{"version":3,"file":"TextFitter.d.ts","sourceRoot":"","sources":["../../src/wordmaster/TextFitter.ts"],"names":[],"mappings":"AAIA,MAAM,WAAW,iBAAiB;IAChC,iBAAiB,CAAC,EAAE,MAAM,CAAC;CAC5B;AAED,qBAAa,UAAU;IACd,iBAAiB,EAAE,MAAM,CAAC;gBAErB,EAAE,iBAAsB,EAAE,GAAE,iBAAsB;IAI9D,OAAO,CAAC,OAAO,EAAE,WAAW,EAAE,SAAS,EAAE,WAAW,GAAG,IAAI;CA2B5D"}

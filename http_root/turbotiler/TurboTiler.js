@@ -1,350 +1,228 @@
 /**
- * TurboTiler.js
+ * TurboTiler.ts
  * Main controller for TurboTiler BX90000 Fascination
- * Integrates font loading, grid display, and animation
  */
-
 import { FontLoader } from '../core/FontLoader.js';
 import { UIControls } from '../shared/UIControls.js';
 import { DragAndDrop } from '../shared/DragAndDrop.js';
 import { GlyphGrid } from './GlyphGrid.js';
 import { GridAnimator } from './GridAnimator.js';
 import { initAppNav } from '../shared/AppNav.js';
-
-class TurboTiler {
-  constructor() {
-    this.initializeComponents();
-    this.setupEventListeners();
-  }
-
-  initializeComponents() {
-    // Get DOM elements
-    this.zoomContainer = document.getElementById('zoom-container');
-    this.gridContainer = document.getElementById('grid-container');
-
-    // Initialize grid and animator
-    this.glyphGrid = new GlyphGrid();
-    this.gridAnimator = new GridAnimator(this.gridContainer, this.glyphGrid);
-
-    // Initialize font loader
-    this.fontLoader = new FontLoader({
-      onFontLoaded: this.handleFontLoaded.bind(this),
-      onError: this.handleError.bind(this)
-    });
-
-    // Initialize UI controls
-    this.uiControls = new UIControls();
-
-    // Initialize drag and drop
-    this.dragAndDrop = new DragAndDrop({
-      dropZone: document.body,
-      onDrop: this.handleFontDrop.bind(this)
-    });
-
-    console.log('TurboTiler initialized');
-  }
-
-  setupEventListeners() {
-    this.uiControls.setupSharedButtons();
-
-    // Save bound references for cleanup in destroy().
-    this._keyHandler    = this.handleKeyPress.bind(this);
-    this._resizeHandler = this.handleResize.bind(this);
-
-    // Keyboard controls
-    document.addEventListener('keydown', this._keyHandler);
-
-    // Window resize handler
-    window.addEventListener('resize', this._resizeHandler);
-
-    // Fullscreen transitions do not always emit a reliable resize sequence.
-    // Force the same relayout path on enter/exit fullscreen.
-    document.addEventListener('fullscreenchange',       this._resizeHandler);
-    document.addEventListener('webkitfullscreenchange', this._resizeHandler);
-    document.addEventListener('mozfullscreenchange',    this._resizeHandler);
-    document.addEventListener('MSFullscreenChange',     this._resizeHandler);
-  }
-
-  handleKeyPress(event) {
-    switch(event.key.toLowerCase()) {
-      case 'f':
-        // Toggle fullscreen
-        this.uiControls.toggleFullscreen();
-        break;
-
-      case ' ':
-        // Spacebar: pause/resume animation
-        event.preventDefault();
-        if (this.gridAnimator.isPaused) {
-          this.gridAnimator.resume();
-        } else {
-          this.gridAnimator.pause();
+export class TurboTiler {
+    fontLoader;
+    uiControls;
+    dragAndDrop;
+    glyphGrid;
+    gridAnimator;
+    zoomContainer;
+    gridContainer;
+    currentFont = null;
+    currentFontFamily = '';
+    resizeTimeouts = null;
+    _keyHandler;
+    _resizeHandler;
+    constructor() {
+        const zoomContainer = document.getElementById('zoom-container');
+        const gridContainer = document.getElementById('grid-container');
+        this.zoomContainer = zoomContainer;
+        this.gridContainer = gridContainer;
+        this.glyphGrid = new GlyphGrid();
+        this.gridAnimator = new GridAnimator(gridContainer, this.glyphGrid);
+        this.fontLoader = new FontLoader({
+            onFontLoaded: (result) => { this.handleFontLoaded(result); },
+            onError: (err) => { this.handleError(err); },
+        });
+        this.uiControls = new UIControls();
+        this.dragAndDrop = new DragAndDrop({
+            dropZone: document.body,
+            onDrop: (buffer) => { this.handleFontDrop(buffer); },
+        });
+        this._keyHandler = (e) => { this.handleKeyPress(e); };
+        this._resizeHandler = () => { this.handleResize(); };
+        this.setupEventListeners();
+        console.log('TurboTiler initialized');
+    }
+    // ---------------------------------------------------------------------------
+    // Event wiring
+    // ---------------------------------------------------------------------------
+    setupEventListeners() {
+        this.uiControls.setupSharedButtons();
+        document.addEventListener('keydown', this._keyHandler);
+        window.addEventListener('resize', this._resizeHandler);
+        document.addEventListener('fullscreenchange', this._resizeHandler);
+        document.addEventListener('webkitfullscreenchange', this._resizeHandler);
+        document.addEventListener('mozfullscreenchange', this._resizeHandler);
+        document.addEventListener('MSFullscreenChange', this._resizeHandler);
+    }
+    handleKeyPress(event) {
+        switch (event.key.toLowerCase()) {
+            case 'f':
+                this.uiControls.toggleFullscreen();
+                break;
+            case ' ':
+                event.preventDefault();
+                if (this.gridAnimator.isPaused) {
+                    this.gridAnimator.resume();
+                }
+                else {
+                    this.gridAnimator.pause();
+                }
+                break;
         }
-        break;
     }
-  }
-
-  handleResize() {
-    if (!this.fontLoader.currentFont) {
-      return;
+    handleResize() {
+        if (!this.fontLoader.currentFont)
+            return;
+        this.scheduleViewportRebuilds();
     }
-
-    this.scheduleViewportRebuilds();
-  }
-
-  scheduleViewportRebuilds() {
-    if (this.resizeTimeouts) {
-      this.resizeTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
-    }
-
-    // Fullscreen transitions may settle in multiple steps.
-    // Rebuild a few times so final viewport dimensions are always captured.
-    const delays = [120, 450, 900];
-    this.resizeTimeouts = delays.map(delay => setTimeout(() => {
-      this.rebuildForViewportChange();
-    }, delay));
-  }
-
-  rebuildForViewportChange() {
-    if (!this.fontLoader.currentFont) {
-      return;
-    }
-
-    const initialWidth = window.innerWidth;
-    const initialHeight = window.innerHeight;
-
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        const settledWidth = window.innerWidth;
-        const settledHeight = window.innerHeight;
-
-        // Fullscreen transitions can report intermediate sizes.
-        // Retry once more if dimensions are still moving.
-        if (settledWidth !== initialWidth || settledHeight !== initialHeight) {
-          this.rebuildForViewportChange();
-          return;
+    scheduleViewportRebuilds() {
+        if (this.resizeTimeouts) {
+            this.resizeTimeouts.forEach(id => clearTimeout(id));
         }
-
+        const delays = [120, 450, 900];
+        this.resizeTimeouts = delays.map(delay => setTimeout(() => { this.rebuildForViewportChange(); }, delay));
+    }
+    rebuildForViewportChange() {
+        if (!this.fontLoader.currentFont)
+            return;
+        const initialWidth = window.innerWidth;
+        const initialHeight = window.innerHeight;
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                if (window.innerWidth !== initialWidth || window.innerHeight !== initialHeight) {
+                    this.rebuildForViewportChange();
+                    return;
+                }
+                this.syncZoomOutScaleToViewport();
+                this.gridAnimator.pause();
+                this.gridAnimator.reset();
+                this.populateGrid();
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => { this.gridAnimator.start(); });
+                });
+            });
+        });
+    }
+    // ---------------------------------------------------------------------------
+    // Font drop
+    // ---------------------------------------------------------------------------
+    handleFontDrop(arrayBuffer) {
+        console.log('Font file dropped, loading...');
+        if (this.resizeTimeouts) {
+            this.resizeTimeouts.forEach(id => clearTimeout(id));
+            this.resizeTimeouts = null;
+        }
+        this.gridAnimator.pause();
+        this.gridAnimator.reset();
+        void this.fontLoader.loadFont(arrayBuffer);
+    }
+    // ---------------------------------------------------------------------------
+    // Font loaded
+    // ---------------------------------------------------------------------------
+    handleFontLoaded({ font, fontInfo, fontFamily }) {
+        console.log(`Font loaded: ${font.names.fullName?.['en'] ?? 'Unknown'}`);
+        console.log(`Unique family name: ${fontFamily}`);
+        this.currentFont = font;
+        this.currentFontFamily = fontFamily;
+        const glyphList = this.extractGlyphs(font);
+        const axes = this.extractAxes(font);
+        const features = this.extractFeatures(font);
+        console.log(`Extracted ${glyphList.length} glyphs`);
+        if (axes.length > 0)
+            console.log(`Found ${axes.length} variable font axes:`, axes.map(a => a.tag));
+        if (features.length > 0)
+            console.log(`Found ${features.length} OpenType features:`, features);
         this.syncZoomOutScaleToViewport();
         this.gridAnimator.pause();
         this.gridAnimator.reset();
-        this.populateGrid();
-
+        this.glyphGrid.populate(this.gridContainer, glyphList, axes, features, fontFamily, font, this.gridAnimator.zoomScale.min);
         requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            this.gridAnimator.start();
-          });
+            requestAnimationFrame(() => { this.gridAnimator.start(); });
         });
-      });
-    });
-  }
-
-  handleFontDrop(arrayBuffer) {
-    console.log('Font file dropped, loading...');
-    console.log('ArrayBuffer size:', arrayBuffer.byteLength);
-
-    // New font should always restart animation from a clean state.
-    if (this.resizeTimeouts) {
-      this.resizeTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
-      this.resizeTimeouts = null;
     }
-    this.gridAnimator.pause();
-    this.gridAnimator.reset();
-
-    this.fontLoader.loadFont(arrayBuffer);
-  }
-
-  handleFontLoaded({ font, fontInfo, fontFamily }) {
-    console.log(`Font loaded: ${font.names.fullName?.en || 'Unknown'}`);
-    console.log(`Unique family name: ${fontFamily}`);
-    console.log('Font object:', font);
-    console.log('Font info:', fontInfo);
-
-    // Store font reference
-    this.currentFont = font;
-    this.currentFontFamily = fontFamily;
-
-    // Extract glyphs
-    const glyphList = this.extractGlyphs(font);
-    console.log(`Extracted ${glyphList.length} glyphs`);
-
-    // Extract variable font axes (if any)
-    const axes = this.extractAxes(font);
-    if (axes.length > 0) {
-      console.log(`Found ${axes.length} variable font axes:`, axes.map(a => a.tag));
+    handleError(error) {
+        console.error('Font loading error:', error);
+        alert(`Error loading font: ${error.message}\nPlease check the console for details.`);
     }
-
-    // Extract OpenType features (if any)
-    const features = this.extractFeatures(font);
-    if (features.length > 0) {
-      console.log(`Found ${features.length} OpenType features:`, features);
+    // ---------------------------------------------------------------------------
+    // Font data extraction
+    // ---------------------------------------------------------------------------
+    extractGlyphs(font) {
+        const glyphs = [];
+        const excluded = /[\p{White_Space}\p{M}\p{Diacritic}\p{C}]/u;
+        for (let i = 0; i < font.glyphs.length; i++) {
+            const glyph = font.glyphs.get(i);
+            if (glyph.name === '.notdef' || glyph.unicode === undefined)
+                continue;
+            const char = String.fromCodePoint(glyph.unicode);
+            if (excluded.test(char))
+                continue;
+            glyphs.push(char);
+        }
+        return glyphs.length > 0 ? glyphs : ['A'];
     }
-
-    // Populate the grid
-    this.syncZoomOutScaleToViewport();
-
-    // Ensure old animation state is fully cleared before repopulating.
-    this.gridAnimator.pause();
-    this.gridAnimator.reset();
-
-    this.glyphGrid.populate(
-      this.gridContainer,
-      glyphList,
-      axes,
-      features,
-      fontFamily,
-      font,
-      this.gridAnimator.zoomScale.min
-    );
-
-    // Start animation
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        this.gridAnimator.start();
-      });
-    });
-  }
-
-  handleError(error) {
-    console.error('Font loading error:', error);
-    console.error('Error stack:', error.stack);
-    console.error('Error type:', error.constructor.name);
-    alert(`Error loading font: ${error.message}\nPlease check the console for details.`);
-  }
-
-  /**
-   * Extract glyph list from font
-   * @param {Object} font - OpenType.js font object
-   * @returns {Array} Array of characters
-   */
-  extractGlyphs(font) {
-    const glyphs = [];
-    const excludedPattern = /[\p{White_Space}\p{M}\p{Diacritic}\p{C}]/u;
-
-    for (let i = 0; i < font.glyphs.length; i++) {
-      const glyph = font.glyphs.get(i);
-
-      // Skip .notdef and glyphs without unicode
-      if (glyph.name === '.notdef' || glyph.unicode === undefined) {
-        continue;
-      }
-
-      // Get character from unicode
-      const char = String.fromCodePoint(glyph.unicode);
-
-      // Skip whitespace, combining marks, diacritics (including legacy spacing
-      // diacritics), and control/format/surrogate/private-use code points.
-      if (excludedPattern.test(char)) {
-        continue;
-      }
-
-      glyphs.push(char);
+    extractAxes(font) {
+        const axes = [];
+        if (font.tables.fvar?.axes) {
+            for (const axis of font.tables.fvar.axes) {
+                axes.push({
+                    tag: axis.tag,
+                    name: axis.name?.['en'] ?? axis.tag,
+                    min: axis.minValue,
+                    max: axis.maxValue,
+                    default: axis.defaultValue,
+                });
+            }
+        }
+        return axes;
     }
-
-    // Fallback to at least one visible placeholder if filtering removes everything
-    if (glyphs.length === 0) {
-      glyphs.push('A');
+    extractFeatures(font) {
+        const features = new Set();
+        if (font.tables.gsub?.features) {
+            for (const feature of font.tables.gsub.features) {
+                features.add(feature.tag);
+            }
+        }
+        return Array.from(features);
     }
-
-    return glyphs;
-  }
-
-  /**
-   * Extract variable font axes from font
-   * @param {Object} font - OpenType.js font object
-   * @returns {Array} Array of axis objects
-   */
-  extractAxes(font) {
-    const axes = [];
-
-    if (font.tables.fvar && font.tables.fvar.axes) {
-      font.tables.fvar.axes.forEach(axis => {
-        axes.push({
-          tag: axis.tag,
-          name: axis.name?.en || axis.tag,
-          minValue: axis.minValue,
-          maxValue: axis.maxValue,
-          defaultValue: axis.defaultValue
-        });
-      });
+    // ---------------------------------------------------------------------------
+    // Grid repopulation
+    // ---------------------------------------------------------------------------
+    populateGrid() {
+        if (!this.currentFont)
+            return;
+        this.syncZoomOutScaleToViewport();
+        this.glyphGrid.populate(this.gridContainer, this.extractGlyphs(this.currentFont), this.extractAxes(this.currentFont), this.extractFeatures(this.currentFont), this.currentFontFamily, this.currentFont, this.gridAnimator.zoomScale.min);
     }
-
-    return axes;
-  }
-
-  /**
-   * Extract OpenType features from font
-   * @param {Object} font - OpenType.js font object
-   * @returns {Array} Array of feature tags
-   */
-  extractFeatures(font) {
-    const features = new Set();
-
-    if (font.tables.gsub && font.tables.gsub.features) {
-      font.tables.gsub.features.forEach(feature => {
-        features.add(feature.tag);
-      });
+    syncZoomOutScaleToViewport() {
+        this.gridAnimator.zoomScale.min = 0.19;
     }
-
-    return Array.from(features);
-  }
-
-  /**
-   * Repopulate grid (called on resize)
-   */
-  populateGrid() {
-    if (!this.currentFont) return;
-
-    this.syncZoomOutScaleToViewport();
-
-    const glyphList = this.extractGlyphs(this.currentFont);
-    const axes = this.extractAxes(this.currentFont);
-    const features = this.extractFeatures(this.currentFont);
-
-    this.glyphGrid.populate(
-      this.gridContainer,
-      glyphList,
-      axes,
-      features,
-      this.currentFontFamily,
-      this.currentFont,
-      this.gridAnimator.zoomScale.min
-    );
-  }
-
-  syncZoomOutScaleToViewport() {
-    if (!this.gridAnimator) return;
-
-    // Geometry-consistent fixed zoom-out scale.
-    // With current grid model (13 rows/cols minimum and 0.4 viewport cell ratio),
-    // 0.19 gives near full-frame fill without bottom cropping on fullscreen.
-    this.gridAnimator.zoomScale.min = 0.19;
-  }
-
-  // Cancel all timers, stop animation, and remove document-level listeners.
-  destroy() {
-    if (this.resizeTimeouts) {
-      this.resizeTimeouts.forEach((id) => clearTimeout(id));
-      this.resizeTimeouts = null;
+    // ---------------------------------------------------------------------------
+    // Cleanup
+    // ---------------------------------------------------------------------------
+    destroy() {
+        if (this.resizeTimeouts) {
+            this.resizeTimeouts.forEach(id => clearTimeout(id));
+            this.resizeTimeouts = null;
+        }
+        this.gridAnimator.pause();
+        this.gridAnimator.reset();
+        document.removeEventListener('keydown', this._keyHandler);
+        window.removeEventListener('resize', this._resizeHandler);
+        document.removeEventListener('fullscreenchange', this._resizeHandler);
+        document.removeEventListener('webkitfullscreenchange', this._resizeHandler);
+        document.removeEventListener('mozfullscreenchange', this._resizeHandler);
+        document.removeEventListener('MSFullscreenChange', this._resizeHandler);
+        this.uiControls.destroy();
+        this.dragAndDrop.destroy();
     }
-    this.gridAnimator.pause();
-    this.gridAnimator.reset();
-    document.removeEventListener('keydown',             this._keyHandler);
-    window.removeEventListener('resize',                this._resizeHandler);
-    document.removeEventListener('fullscreenchange',       this._resizeHandler);
-    document.removeEventListener('webkitfullscreenchange', this._resizeHandler);
-    document.removeEventListener('mozfullscreenchange',    this._resizeHandler);
-    document.removeEventListener('MSFullscreenChange',     this._resizeHandler);
-    this.uiControls.destroy();
-    this.dragAndDrop.destroy();
-  }
 }
-
-// Standalone bootstrap (no-op in SPA mode — DOMContentLoaded won't fire).
+// ---------------------------------------------------------------------------
+// Standalone bootstrap
+// ---------------------------------------------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
-  const app = new TurboTiler();
-  initAppNav();
-  app.fontLoader.restoreFromSession();
+    const app = new TurboTiler();
+    initAppNav();
+    void app.fontLoader.restoreFromSession();
 });
-
-export { TurboTiler };
+//# sourceMappingURL=TurboTiler.js.map

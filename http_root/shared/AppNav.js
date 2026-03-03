@@ -1,60 +1,48 @@
 // =============================================================================
-// AppNav.js
+// shared/AppNav.ts
 // Injects persistent app navigation below the fullscreen button on every page.
 // Supports both classic multi-page mode and the SPA AppShell mode.
 // =============================================================================
-
 const TOOLS = [
-    { label: 'HyperFlip',   href: 'HyperFlipBX90000Dominator.html' },
-    { label: 'WordMaster',  href: 'WordMasterBX90000Excelsior.html' },
+    { label: 'HyperFlip', href: 'HyperFlipBX90000Dominator.html' },
+    { label: 'WordMaster', href: 'WordMasterBX90000Excelsior.html' },
     { label: 'GalleyProof', href: 'GalleyProofBX90000Zenith.html' },
-    { label: 'TurboTiler',  href: 'TurboTilerBX90000Fascination.html' },
+    { label: 'TurboTiler', href: 'TurboTilerBX90000Fascination.html' },
 ];
-
-// Map HTML filenames to SPA app keys (used when activeKey is provided).
 const HREF_TO_KEY = {
-    'HyperFlipBX90000Dominator.html':    'hyperflip',
-    'WordMasterBX90000Excelsior.html':   'wordmaster',
-    'GalleyProofBX90000Zenith.html':     'galleyproof',
+    'HyperFlipBX90000Dominator.html': 'hyperflip',
+    'WordMasterBX90000Excelsior.html': 'wordmaster',
+    'GalleyProofBX90000Zenith.html': 'galleyproof',
     'TurboTilerBX90000Fascination.html': 'turbotiler',
 };
-
 /**
  * Injects the persistent app navigation below the fullscreen button.
  *
- * @param {string|null} activeKey  - SPA app key (e.g. 'hyperflip') that
- *   should be highlighted. When null the active page is inferred from the URL,
- *   which is the correct behaviour for the standalone per-page HTML files.
- * @param {Function|null} onNavigate - Optional callback for SPA navigation.
- *   Receives the href string (e.g. 'HyperFlipBX90000Dominator.html').
- *   When provided, default link navigation is suppressed.
+ * @param activeKey   SPA app key (e.g. `'hyperflip'`) to highlight.
+ *                    When null the active page is inferred from the URL.
+ * @param onNavigate  Optional SPA navigation callback receiving the href string.
+ *                    When provided, default link navigation is suppressed.
  */
-export function initAppNav(activeKey = null, onNavigate = null) {
+export function initAppNav(activeKey = null, onNavigate) {
     const nav = document.createElement('nav');
     nav.id = 'appNav';
-
-    // Fall back to URL-based detection when not in SPA mode.
-    const currentPage = window.location.pathname.split('/').pop();
-
-    TOOLS.forEach(({ label, href }) => {
+    const currentPage = window.location.pathname.split('/').pop() ?? '';
+    for (const { label, href } of TOOLS) {
         const a = document.createElement('a');
         a.href = href;
         a.textContent = label;
-
         const isActive = activeKey
             ? HREF_TO_KEY[href] === activeKey
             : href === currentPage;
-
         if (isActive) {
             a.classList.add('active');
             a.setAttribute('aria-current', 'page');
         }
-
         if (onNavigate) {
             a.addEventListener('click', (e) => {
                 e.preventDefault();
-                // Update active highlight immediately for responsiveness.
-                nav.querySelectorAll('a').forEach((x) => {
+                // Update highlight immediately for responsiveness.
+                nav.querySelectorAll('a').forEach(x => {
                     x.classList.remove('active');
                     x.removeAttribute('aria-current');
                 });
@@ -63,16 +51,11 @@ export function initAppNav(activeKey = null, onNavigate = null) {
                 onNavigate(href);
             });
         }
-
         nav.appendChild(a);
-    });
-
+    }
     const topBar = document.getElementById('topBar');
     if (topBar) {
         topBar.insertAdjacentElement('afterbegin', nav);
-
-        // Only push #info-panels down when the topBar overlaps the
-        // 300 px-wide info panel area on the left of the screen.
         const updateTopbarBottom = () => {
             const rect = topBar.getBoundingClientRect();
             const offset = rect.left < 300 ? `${rect.bottom + 7}px` : '0px';
@@ -81,7 +64,9 @@ export function initAppNav(activeKey = null, onNavigate = null) {
         updateTopbarBottom();
         new ResizeObserver(updateTopbarBottom).observe(topBar);
         window.addEventListener('resize', updateTopbarBottom);
-    } else {
+    }
+    else {
         document.body.appendChild(nav);
     }
 }
+//# sourceMappingURL=AppNav.js.map

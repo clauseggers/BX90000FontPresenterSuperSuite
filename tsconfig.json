@@ -1,0 +1,44 @@
+{
+  "compilerOptions": {
+    // ────────────────────────────────────────────────
+    // Language & output target
+    // ────────────────────────────────────────────────
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+
+    // ────────────────────────────────────────────────
+    // Module system
+    // NodeNext: recognises .js extensions in imports as .ts sources
+    // and emits native ESM — exactly what the browser requires.
+    // ────────────────────────────────────────────────
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+
+    // ────────────────────────────────────────────────
+    // Paths
+    // ────────────────────────────────────────────────
+    "rootDir": "./src",
+    "outDir": "./http_root",
+
+    // ────────────────────────────────────────────────
+    // Emit
+    // ────────────────────────────────────────────────
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
+    "removeComments": false,
+
+    // ────────────────────────────────────────────────
+    // Strict type-checking
+    // ────────────────────────────────────────────────
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": false,
+
+    // Prevent accidentally emitting broken JS when there are type errors.
+    "noEmitOnError": true
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules"]
+}

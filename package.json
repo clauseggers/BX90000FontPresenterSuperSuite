@@ -1,0 +1,16 @@
+{
+  "name": "bx90000-font-presenter-super-suite",
+  "version": "1.0.0",
+  "description": "A client-side font presentation and exploration suite",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "serve": "bash serve.sh"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.2"
+  },
+  "license": "MIT"
+}

@@ -1,29 +1,15 @@
 // =============================================================================
-// core/Types.js
+// core/Types.ts
+// Shared type definitions and constants used across the entire suite.
 // =============================================================================
-
-/**
- * @typedef {Object} FontMetrics
- * @property {number} ascender
- * @property {number} descender
- * @property {number} xHeight
- * @property {number} capHeight
- * @property {number} unitsPerEm
- */
-
-/**
- * @typedef {Object} AxisDefinition
- * @property {string} tag
- * @property {string} name
- * @property {number} min
- * @property {number} max
- * @property {number} default
- */
-
+// ---------------------------------------------------------------------------
+// Well-known variable-font axis tags and their display names
+// ---------------------------------------------------------------------------
 export const AXIS_NAMES = {
-  'wght': 'Weight',
-  'wdth': 'Width',
-  'ital': 'Italic',
-  'slnt': 'Slant',
-  'opsz': 'Optical Size',
+    wght: 'Weight',
+    wdth: 'Width',
+    ital: 'Italic',
+    slnt: 'Slant',
+    opsz: 'Optical Size',
 };
+//# sourceMappingURL=Types.js.map
