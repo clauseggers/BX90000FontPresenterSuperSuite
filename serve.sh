@@ -9,6 +9,10 @@ fi
 OS=$(uname -s)
 export OS
 
+# Build the project
+echo "Building project..."
+npm run build
+
 # Start server with caching disabled and CORS enabled
 echo "Starting server with caching disabled..."
 cd http_root || exit

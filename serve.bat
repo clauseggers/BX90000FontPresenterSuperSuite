@@ -19,6 +19,14 @@ if %errorlevel% neq 0 (
     )
 )
 
+:: Build the project
+echo Building project...
+call npm run build
+if %errorlevel% neq 0 (
+    echo Build failed
+    exit /b 1
+)
+
 :: Check and change to http_root directory
 if not exist http_root\ (
     echo Directory http_root does not exist
