@@ -429,3 +429,14 @@ Temporary Items
 ### macOS Patch ###
 # iCloud generated files
 *.icloud
+
+# TypeScript compiled output
+http_root/**/*.js
+http_root/**/*.js.map
+http_root/**/*.d.ts
+
+# Keep vendored opentype.js
+!http_root/opentypejs/opentype.js
+
+# Node dependencies
+node_modules/
