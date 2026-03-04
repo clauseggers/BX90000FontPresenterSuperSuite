@@ -32,6 +32,13 @@ export class OpenTypeFeatures {
   private availableFeatures: Set<string> = new Set();
   private featureNames:     Map<string, string> = new Map();
 
+  private static readonly KNOWN_FEATURE_NAMES: Readonly<Record<string, string>> = {
+    smcp: 'Small Caps',
+    c2sc: 'Caps to Small Caps',
+    liga: 'Standard Ligatures',
+    dlig: 'Discretionary Ligatures',
+  };
+
   private readonly buttonsContainer: Element | null;
   private readonly onFeaturesChanged?: ((featureString: string) => void) | null;
 
@@ -160,7 +167,8 @@ export class OpenTypeFeatures {
     features: FeatureRecord[] | Record<string, unknown>,
     featureSet: Set<string>,
   ): void {
-    const accepts = (tag: string) => tag === 'smcp' || tag.startsWith('ss');
+    const accepts = (tag: string) =>
+      tag === 'smcp' || tag === 'c2sc' || tag === 'liga' || tag === 'dlig' || tag.startsWith('ss');
 
     if (Array.isArray(features)) {
       for (const feature of features) {
@@ -213,7 +221,8 @@ export class OpenTypeFeatures {
   private updateButton(button: HTMLButtonElement, feature: string): void {
     const isEnabled       = this.activeFeatures.has(feature);
     const displayTag      = feature.toUpperCase();
-    const descriptiveName = this.featureNames.get(feature);
+    const descriptiveName = this.featureNames.get(feature)
+      ?? OpenTypeFeatures.KNOWN_FEATURE_NAMES[feature];
     button.textContent    = descriptiveName ? `${displayTag} ${descriptiveName}` : displayTag;
     button.classList.toggle('active', isEnabled);
   }
