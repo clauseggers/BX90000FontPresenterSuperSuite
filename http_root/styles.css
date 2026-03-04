@@ -437,3 +437,9 @@ input[type="range"]:focus::-moz-range-thumb {
   cursor: default;
   pointer-events: none;
 }
+
+.feature-button.active {
+  background: var(--black);
+  color: var(--white);
+  border: 1px solid var(--black);
+}

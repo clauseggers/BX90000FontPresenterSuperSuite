@@ -3,6 +3,7 @@
 // =============================================================================
 
 import type { FontInformation } from '../core/Types.js';
+import { saveOpenTypeFeatures, getSavedOpenTypeFeatures } from '../shared/FontSession.js';
 
 // ---------------------------------------------------------------------------
 // Internal types
@@ -189,21 +190,32 @@ export class OpenTypeFeatures {
 
     const wrapper = this.buttonsContainer.querySelector('.feature-buttons-wrapper') ?? this.buttonsContainer;
 
+    const savedFeatures = getSavedOpenTypeFeatures();
+    if (savedFeatures) {
+      for (const tag of savedFeatures) {
+        if (this.availableFeatures.has(tag)) this.activeFeatures.add(tag);
+      }
+    }
+
     for (const feature of this.availableFeatures) {
       const button = document.createElement('button');
       button.className = 'feature-button';
-      this.updateButtonText(button, feature);
+      this.updateButton(button, feature);
       button.addEventListener('click', () => { this.toggleFeature(feature, button); });
       wrapper.appendChild(button);
     }
+
+    if (this.activeFeatures.size > 0) {
+      this.onFeaturesChanged?.(this.getFeatureString());
+    }
   }
 
-  private updateButtonText(button: HTMLButtonElement, feature: string): void {
-    const isEnabled      = this.activeFeatures.has(feature);
-    const displayTag     = feature.toUpperCase();
+  private updateButton(button: HTMLButtonElement, feature: string): void {
+    const isEnabled       = this.activeFeatures.has(feature);
+    const displayTag      = feature.toUpperCase();
     const descriptiveName = this.featureNames.get(feature);
-    const label          = descriptiveName ? `${displayTag} ${descriptiveName}` : displayTag;
-    button.textContent   = isEnabled ? `Disable ${label}` : `Enable ${label}`;
+    button.textContent    = descriptiveName ? `${displayTag} ${descriptiveName}` : displayTag;
+    button.classList.toggle('active', isEnabled);
   }
 
   private toggleFeature(feature: string, button: HTMLButtonElement): string {
@@ -213,7 +225,8 @@ export class OpenTypeFeatures {
       this.activeFeatures.add(feature);
     }
 
-    this.updateButtonText(button, feature);
+    this.updateButton(button, feature);
+    saveOpenTypeFeatures(Array.from(this.activeFeatures));
     const featureString = this.getFeatureString();
     this.onFeaturesChanged?.(featureString);
     return featureString;

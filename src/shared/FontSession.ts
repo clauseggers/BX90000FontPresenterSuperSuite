@@ -126,6 +126,35 @@ export function getSavedFont(): SavedFont | null {
 }
 
 // ---------------------------------------------------------------------------
+// OpenType feature state
+// ---------------------------------------------------------------------------
+
+const OPENTYPE_FEATURES_KEY = 'bx90000_opentype_features';
+
+/** Persists the set of active OpenType feature tags. Pass null to clear. */
+export function saveOpenTypeFeatures(features: string[] | null): void {
+  if (features === null || features === undefined) {
+    sessionStorage.removeItem(OPENTYPE_FEATURES_KEY);
+    return;
+  }
+  try {
+    sessionStorage.setItem(OPENTYPE_FEATURES_KEY, JSON.stringify(features));
+  } catch {
+    // Ignore
+  }
+}
+
+/** Returns the saved active OpenType feature tags, or null. */
+export function getSavedOpenTypeFeatures(): string[] | null {
+  try {
+    const val = sessionStorage.getItem(OPENTYPE_FEATURES_KEY);
+    return val !== null ? (JSON.parse(val) as string[]) : null;
+  } catch {
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // HyperFlip UI state
 // ---------------------------------------------------------------------------
 
