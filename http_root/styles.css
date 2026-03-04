@@ -430,10 +430,6 @@ input[type="range"]:focus::-moz-range-thumb {
   transition: .2s;
 }
 
-#appNav a:hover {
-  opacity: 0.6;
-}
-
 #appNav a.active {
   background: var(--black);
   color: var(--white);
