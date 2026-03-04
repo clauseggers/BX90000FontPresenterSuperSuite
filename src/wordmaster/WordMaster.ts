@@ -254,10 +254,23 @@ export class WordAnimator {
       if (word === word.toLowerCase()) {
         const random = Math.random();
         if (random < 0.15) return { word: word.toUpperCase(), lang };
-        if (random < 0.50) return { word: word.charAt(0).toUpperCase() + word.slice(1), lang };
+        if (random < 0.50) return { word: this.capitaliseFirst(word, lang), lang };
       }
       return { word, lang };
     });
+  }
+
+  /**
+   * Capitalises the first letter(s) of a word, respecting language-specific
+   * digraph rules. In Dutch, 'ij' at the start of a word is a single digraph
+   * and must always be capitalised together as 'IJ' — so 'ijskoud' becomes
+   * 'IJskoud', never 'Ijskoud'.
+   */
+  private capitaliseFirst(word: string, lang: string): string {
+    if (lang === 'nl' && word.toLowerCase().startsWith('ij')) {
+      return 'IJ' + word.slice(2);
+    }
+    return word.charAt(0).toUpperCase() + word.slice(1);
   }
 
   // ---------------------------------------------------------------------------

@@ -33,6 +33,7 @@ export const BCP47_TAGS: Readonly<Record<string, string>> = {
   croatian:     'hr',
   czech:        'cs',
   danish:       'da',
+  dutch:        'nl',
   english:      'en',
   estonian:     'et',
   finnish:      'fi',
