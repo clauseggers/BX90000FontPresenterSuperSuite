@@ -15,14 +15,14 @@ interface ColourOption {
 }
 
 const COLOURS: readonly ColourOption[] = [
-  { label: 'Black',   value: 'hsl(0deg 0% 0%)'     },
-  { label: 'Red',     value: 'hsl(356deg 100% 60%)' },
-  { label: 'Purple',  value: 'hsl(256deg 100% 60%)' },
-  { label: 'Blue',    value: 'hsl(222deg 100% 60%)' },
-  { label: 'Orange',  value: 'hsl(32deg 100% 50%)'  },
-  { label: 'Green',   value: 'hsl(100deg 60% 50%)'  },
-  { label: 'Cyan',    value: 'hsl(185deg 85% 55%)'  },
-  { label: 'Magenta', value: 'hsl(315deg 80% 60%)'  },
+  { label: 'Black',   value: 'hsl(0deg 0% 0%)' },
+  { label: 'Magenta', value: 'hsl(315deg 80% 52%)'  },
+  { label: 'Red',     value: 'hsl(356deg 95% 60%)' },
+  { label: 'Orange',  value: 'hsl(28deg 100% 50%)' },
+  { label: 'Green',   value: 'hsl(100deg 53% 42%)' },
+  { label: 'Cyan',    value: 'hsl(188deg 90% 43%)'  },
+  { label: 'Blue',    value: 'hsl(222deg 80% 58%)' },
+  { label: 'Purple',  value: 'hsl(256deg 100% 63%)' },
 ];
 
 export class UIControls {
