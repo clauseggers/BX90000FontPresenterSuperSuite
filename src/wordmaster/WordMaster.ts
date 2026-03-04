@@ -34,6 +34,11 @@ export class WordAnimator {
   private animationTimer:          ReturnType<typeof setTimeout> | null = null;
   private fadeTimer:               ReturnType<typeof setTimeout> | null = null;
   private loadedFont:              opentype.Font | null = null;
+
+  // Navigation history — lets j/k step back and forward through shown words
+  private history:      WordEntry[] = [];
+  private historyIndex: number      = -1;
+  private static readonly HISTORY_MAX = 200;
   private currentVariationSettings = 'normal';
   private paddingPercentage        = 10;
   private animationDelay           = 3000;
@@ -161,6 +166,20 @@ export class WordAnimator {
           void this.start(this.animationDelay);
         }
         break;
+      case 'j': {
+        event.preventDefault();
+        // Step back one word — pause the animation if it is running
+        this.stop();
+        const prev = this.historyBack();
+        if (prev) void this.fadeToEntry(prev);
+        break;
+      }
+      case 'k':
+        event.preventDefault();
+        // Step forward one word — pause the animation if it is running
+        this.stop();
+        void this.fadeToEntry(this.historyAdvance());
+        break;
       case 'f':
         this.uiControls.toggleFullscreen();
         break;
@@ -227,6 +246,10 @@ export class WordAnimator {
   }
 
   private processWordList(): void {
+    // Clear navigation history whenever the word pool changes
+    this.history      = [];
+    this.historyIndex = -1;
+
     this.processedWordList = this.wordList.map(({ word, lang }) => {
       if (word === word.toLowerCase()) {
         const random = Math.random();
@@ -234,6 +257,75 @@ export class WordAnimator {
         if (random < 0.50) return { word: word.charAt(0).toUpperCase() + word.slice(1), lang };
       }
       return { word, lang };
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // History navigation
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Returns the next word, replaying from history if the user has stepped back,
+   * otherwise picks a new random word and appends it to the history.
+   */
+  private historyAdvance(): WordEntry {
+    if (this.historyIndex < this.history.length - 1) {
+      this.historyIndex++;
+      return this.history[this.historyIndex]!;
+    }
+    const entry = this.getRandomWord();
+    this.historyIndex++;
+    this.history.push(entry);
+    // Cap memory use
+    if (this.history.length > WordAnimator.HISTORY_MAX) {
+      this.history.shift();
+      this.historyIndex--;
+    }
+    return entry;
+  }
+
+  /**
+   * Steps one word back in history. Returns null if already at the beginning.
+   */
+  private historyBack(): WordEntry | null {
+    if (this.historyIndex <= 0) return null;
+    this.historyIndex--;
+    return this.history[this.historyIndex] ?? null;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Word rendering helpers
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Renders a word entry into the container DOM element immediately (no fade).
+   */
+  private renderEntry(entry: WordEntry): void {
+    if (!this.container) return;
+    const wordElement = document.createElement('div');
+    wordElement.textContent                  = entry.word;
+    wordElement.lang                         = entry.lang;
+    wordElement.style.whiteSpace             = 'nowrap';
+    wordElement.style.fontFeatureSettings    = this.openTypeFeatures.getFeatureString();
+    wordElement.style.fontVariationSettings  = this.currentVariationSettings;
+    this.container.innerHTML = '';
+    this.container.appendChild(wordElement);
+    this.textFitter.fitText(wordElement, this.container);
+  }
+
+  /**
+   * Fades the container out, renders the entry, then fades back in.
+   * Works whether the animation is running or paused (used by j/k navigation).
+   */
+  private fadeToEntry(entry: WordEntry): Promise<void> {
+    return new Promise<void>((resolve) => {
+      if (this.fadeTimer !== null) clearTimeout(this.fadeTimer);
+      this.container?.classList.add('fade-out');
+      this.fadeTimer = setTimeout(() => {
+        this.renderEntry(entry);
+        this.container?.classList.remove('fade-out');
+        resolve();
+      }, 300);
     });
   }
 
@@ -294,18 +386,9 @@ export class WordAnimator {
       this.container?.classList.add('fade-out');
 
       this.fadeTimer = setTimeout(() => {
-        if (this.isAnimating && this.container) {
-          const entry       = this.getRandomWord();
-          const wordElement = document.createElement('div');
-          wordElement.textContent                  = entry.word;
-          wordElement.lang                         = entry.lang;
-          wordElement.style.whiteSpace             = 'nowrap';
-          wordElement.style.fontFeatureSettings    = this.openTypeFeatures.getFeatureString();
-          wordElement.style.fontVariationSettings  = this.currentVariationSettings;
-
-          this.container.innerHTML = '';
-          this.container.appendChild(wordElement);
-          this.textFitter.fitText(wordElement, this.container);
+        // Guard against the timer firing after stop() was called
+        if (this.isAnimating) {
+          this.renderEntry(this.historyAdvance());
         }
         this.container?.classList.remove('fade-out');
         resolve();
