@@ -11,6 +11,13 @@ import { TextFitter }       from './TextFitter.js';
 import { OpenTypeFeatures } from './OpenTypeFeatures.js';
 import { initAppNav }       from '../shared/AppNav.js';
 import type { FontLoadResult } from '../core/Types.js';
+import {
+  buildFontCodepointSet,
+  fetchLanguageCharsets,
+  detectSupportedLanguages,
+  langToBcp47,
+  type WordEntry,
+} from './LanguageDetector.js';
 
 export class WordAnimator {
   public readonly fontLoader: FontLoader;
@@ -22,10 +29,11 @@ export class WordAnimator {
   private readonly variationAxes:   VariationAxes;
   private readonly container:       HTMLElement | null;
 
-  private wordList:                string[] = [];
-  private processedWordList:       string[] = [];
+  private wordList:                WordEntry[] = [];
+  private processedWordList:       WordEntry[] = [];
   private animationTimer:          ReturnType<typeof setTimeout> | null = null;
   private fadeTimer:               ReturnType<typeof setTimeout> | null = null;
+  private loadedFont:              opentype.Font | null = null;
   private currentVariationSettings = 'normal';
   private paddingPercentage        = 10;
   private animationDelay           = 3000;
@@ -80,7 +88,7 @@ export class WordAnimator {
 
     this.setupEventListeners();
     this.initializeSliders();
-    void this.loadWordList();
+    void this.loadWordList(null);
     window.addEventListener('resize', this._resizeHandler);
   }
 
@@ -159,26 +167,73 @@ export class WordAnimator {
     }
   }
 
-  private async loadWordList(): Promise<void> {
+  private async loadWordList(font: opentype.Font | null): Promise<void> {
+    const CORPUS_BASE = 'corpus/words';
+
     try {
-      const response = await fetch('word_lists/euro_words.txt');
-      const text     = await response.text();
-      this.wordList  = text.split('\n').filter(word => word.trim().length > 0);
+      if (font === null) {
+        // No font loaded yet — use English as a sensible default
+        const response = await fetch(`${CORPUS_BASE}/english.txt`);
+        const text     = await response.text();
+        this.wordList  = text.split('\n')
+          .map(w => w.trim()).filter(w => w.length > 0)
+          .map(word => ({ word, lang: 'en' }));
+        this.processWordList();
+        return;
+      }
+
+      // Build the set of codepoints the font actually contains
+      const fontCodepoints = buildFontCodepointSet(font);
+
+      // Fetch the pre-built charset map (cached after first load)
+      const charsets = await fetchLanguageCharsets(CORPUS_BASE);
+
+      // Detect which language word lists this font fully supports
+      const { supportedLanguages, wordListFiles, coverageReport } =
+        detectSupportedLanguages(fontCodepoints, charsets);
+
+      console.log('[WordMaster] Supported languages:', supportedLanguages);
+      console.table(coverageReport);
+
+      const filesToLoad = wordListFiles.length > 0
+        ? wordListFiles
+        : ['english.txt'];  // Fallback when no language matched
+
+      if (wordListFiles.length === 0) {
+        console.warn('[WordMaster] No language word lists matched — falling back to english.txt');
+      }
+
+      // Fetch all matched word list files in parallel, keeping the language name
+      const fetches = filesToLoad.map((filename, i) => {
+        const language = (wordListFiles.length > 0 ? supportedLanguages[i] : 'english') ?? 'english';
+        const bcp47    = langToBcp47(language);
+        return fetch(`${CORPUS_BASE}/${filename}`)
+          .then(r => r.text())
+          .then(text =>
+            text.split('\n')
+              .map(w => w.trim()).filter(w => w.length > 0)
+              .map((word): WordEntry => ({ word, lang: bcp47 })),
+          );
+      });
+      this.wordList = (await Promise.all(fetches)).flat();
       this.processWordList();
-    } catch {
-      this.wordList         = ['OpenType', 'Features', 'Typography', 'Design'];
+
+    } catch (err) {
+      console.error('[WordMaster] loadWordList failed:', err);
+      this.wordList          = ['OpenType', 'Features', 'Typography', 'Design']
+        .map(word => ({ word, lang: 'en' }));
       this.processedWordList = this.wordList;
     }
   }
 
   private processWordList(): void {
-    this.processedWordList = this.wordList.map(word => {
+    this.processedWordList = this.wordList.map(({ word, lang }) => {
       if (word === word.toLowerCase()) {
         const random = Math.random();
-        if (random < 0.15) return word.toUpperCase();
-        if (random < 0.50) return word.charAt(0).toUpperCase() + word.slice(1);
+        if (random < 0.15) return { word: word.toUpperCase(), lang };
+        if (random < 0.50) return { word: word.charAt(0).toUpperCase() + word.slice(1), lang };
       }
-      return word;
+      return { word, lang };
     });
   }
 
@@ -197,7 +252,8 @@ export class WordAnimator {
       this.variationAxes.createAxesControls(fontInfo.axes, fontInfo.instances);
     }
 
-    void this.start();
+    this.loadedFont = font;
+    void this.loadWordList(font).then(() => { void this.start(); });
   }
 
   async start(interval: number = this.animationDelay): Promise<void> {
@@ -208,7 +264,7 @@ export class WordAnimator {
     this.animationDelay = interval;
 
     if (this.wordList.length === 0) {
-      await this.loadWordList();
+      await this.loadWordList(this.loadedFont);
     }
 
     this.container?.classList.remove('fade-out');
@@ -239,9 +295,10 @@ export class WordAnimator {
 
       this.fadeTimer = setTimeout(() => {
         if (this.isAnimating && this.container) {
-          const word        = this.getRandomWord();
+          const entry       = this.getRandomWord();
           const wordElement = document.createElement('div');
-          wordElement.textContent                  = word;
+          wordElement.textContent                  = entry.word;
+          wordElement.lang                         = entry.lang;
           wordElement.style.whiteSpace             = 'nowrap';
           wordElement.style.fontFeatureSettings    = this.openTypeFeatures.getFeatureString();
           wordElement.style.fontVariationSettings  = this.currentVariationSettings;
@@ -256,9 +313,9 @@ export class WordAnimator {
     });
   }
 
-  private getRandomWord(): string {
-    const idx  = Math.floor(Math.random() * this.processedWordList.length);
-    return this.processedWordList[idx] ?? 'Typography';
+  private getRandomWord(): WordEntry {
+    const idx = Math.floor(Math.random() * this.processedWordList.length);
+    return this.processedWordList[idx] ?? { word: 'Typography', lang: 'en' };
   }
 
   destroy(): void {

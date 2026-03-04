@@ -195,7 +195,7 @@ export class GalleyProof {
 
   private async loadText(): Promise<void> {
     try {
-      const response  = await fetch('word_lists/kongens_fald_html.txt');
+      const response  = await fetch('corpus/text/kongens_fald_html.txt');
       const innerHTML = await response.text();
 
       if (!this.container) return;

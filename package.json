@@ -4,7 +4,8 @@
   "description": "A client-side font presentation and exploration suite",
   "type": "module",
   "scripts": {
-    "build": "tsc",
+    "build:charsets": "python3 scripts/build_language_charsets.py",
+    "build": "npm run build:charsets && tsc",
     "build:watch": "tsc --watch",
     "typecheck": "tsc --noEmit",
     "serve": "bash serve.sh"
